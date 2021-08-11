@@ -112,6 +112,24 @@ def findClosestNombreParLivre(nbrParLivre, croissance):
     return closest[1]
 
 
+def getTotalActuelStat(c, lot_id, totSem, totPech, totAct, mortAct, quantPech):
+    c.execute(
+        f'SELECT quantitelb, mortalite  FROM Statistiques WHERE lot_id = "{lot_id}" ORDER BY date DESC')
+    temp = c.fetchone()
+    if temp == None:
+        return -100000000
+    cant, mort = temp
+    if totPech is None:
+        totPech = 0
+    if totAct == None:
+        totAct = 0
+    if mort == None or cant == None:
+        return -100000000
+    poids = (totSem - ((totSem - totPech - totAct)
+                       * mort) / mortAct - quantPech) / cant
+    return poids
+
+
 def getTotalActuel(c, lot_id, espece_id):
     c.execute(
         f"SELECT date, poids, quantite FROM Semis WHERE lot_id = {lot_id}")
@@ -148,7 +166,6 @@ def getTotalActuel(c, lot_id, espece_id):
 
     if espece_id == 3:
         espece_id = 7
-    print(espece_id)
     c.execute(
         f"SELECT taux_initial, taux_hebdomadaire FROM Mortalite WHERE espece_id = {espece_id}")
     temp = c.fetchall()
@@ -222,6 +239,12 @@ def getLots(c, cycle_id):
     return lots
 
 
+def getAliTotal(c, bassin, datePlein, dateVide=datetime.today().strftime('%d/%m/%Y')):
+    c.execute(
+        f"SELECT sum(AlimentationJournalieres.poids) FROM AlimentationJournalieres, Bassins WHERE Bassins.id = AlimentationJournalieres.bassin_id AND  Bassins.libelle = '{bassin}' AND AlimentationJournalieres.date >= '{changeDateBack(datePlein)}'  AND AlimentationJournalieres.date <= '{changeDateBack(dateVide)}'")
+    return c.fetchone()[0]
+
+
 class Cycles(Resource):
     @flask_praetorian.auth_required
     def get(self, bassin=""):
@@ -258,13 +281,14 @@ class Cycles(Resource):
             cycle['Peso sembrado'] = 0
             cycle['Peso actual'] = 0
             cycle['Alimentacion téo'] = 0
+            cycle['Peso actual Stat'] = 0
             mort = []
             weights = []
             for j, lot in enumerate(lots):
-                temp = getTotalPeches(c, lot[0])
-                cycle['Peso pescado'] += temp[0]
-                temp = getTotalSemis(c, lot[0])
-                cycle['Peso sembrado'] += temp[0]
+                totPech, quantPech = getTotalPeches(c, lot[0])
+                cycle['Peso pescado'] += totPech
+                totSem = getTotalSemis(c, lot[0])[0]
+                cycle['Peso sembrado'] += totSem
                 temp = getTotalActuel(c, lot[0], lot[1])
                 cycle['Alimentacion téo'] += temp[4]
                 cycle['Peso actual'] += temp[1]
@@ -272,6 +296,16 @@ class Cycles(Resource):
                     (cycle['# meses'], temp[2]))
                 mort.append(temp[3])
                 weights.append(temp[0])
+                cycle['Peso actual Stat'] += getTotalActuelStat(
+                    c, lot[0], totSem, totPech, temp[1], temp[3], quantPech)
+            aliTotal = getAliTotal(c, cycle['Estanque'], cycle['Fecha lleno'])
+            if cycle['Peso actual Stat'] <= -100000000:
+                pUtile = cycle['Peso actual']
+            else:
+                pUtile = cycle['Peso actual Stat']
+            if aliTotal != 0:
+                cycle['Indice de conversion'] = round(aliTotal / (
+                    cycle['Peso pescado'] + pUtile - cycle['Peso sembrado']), 2)
             try:
                 cycle['Mortalidad'] = str(
                     round(average(mort, weights=weights)*100)) + " %"
@@ -279,7 +313,7 @@ class Cycles(Resource):
                 print("Weight are null")
             cycle['Alimentacion téo'] = round(cycle['Alimentacion téo'], 1)
             if cycle['Superficie'] != 0 and cycle['# meses'] != 0:
-                cycle['Rendimiento'] = round((cycle['Peso pescado'] + cycle['Peso actual'] - cycle['Peso sembrado']) *
+                cycle['Rendimiento'] = round((cycle['Peso pescado'] + pUtile - cycle['Peso sembrado']) *
                                              0.454 / cycle['Superficie'] * 10000 / cycle['# meses'] * 12)
         conn.close()
         pop_list.reverse()
