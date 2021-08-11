@@ -151,7 +151,11 @@ def getTotalActuel(c, lot_id, espece_id):
     print(espece_id)
     c.execute(
         f"SELECT taux_initial, taux_hebdomadaire FROM Mortalite WHERE espece_id = {espece_id}")
-    temp = c.fetchall()[0]
+    temp = c.fetchall()
+    if len(temp) > 0:
+        temp = temp[0]
+    else:
+        return 0, 0, round((datetime.now() - date_max).days / 30.41, 2), 0, 0, 0
     taux_initial, taux_hebdomaire = temp[0], temp[1]
 
     c.execute(
