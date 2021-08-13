@@ -111,16 +111,24 @@ class ShowTable(Resource):
                 if name != 'id':
                     if name == "date":
                         ch = changeDateBack(data[name])
+                    elif name == "Espece":
+                        c.execute(
+                            f"SELECT id FROM Especes WHERE libelle='{data[name]}'")
+                        ch = c.fetchone()[0]
                     else:
                         ch = data[name]
                     try:
                         int(ch)
-                        changes += f'{name} = {ch},'
+                        if name == "Espece":
+                            changes += f'espece_id = {ch},'
+                        else:
+                            changes += f'{name} = {ch},'
                     except:
                         changes += f'{name} = "{ch}",'
 
             changes = changes.strip(',')
             command = f"UPDATE {table} SET {changes} WHERE id = {id}"
+            print(command)
             c.execute(command)
             conn.commit()
             conn.close()
