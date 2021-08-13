@@ -72,6 +72,9 @@ class ShowTable(Resource):
         if table in ["ChangementEau"]:
             c.execute(
                 f"SELECT * FROM {table} ORDER BY date DESC ")
+        elif table in ["Croissance"]:
+            c.execute(
+                f"SELECT * FROM {table} ORDER BY espece_id ASC, semaine ASC")
         else:
             c.execute(
                 f"SELECT * FROM {table} ")
