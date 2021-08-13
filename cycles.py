@@ -18,7 +18,7 @@ dbPath = "database.db"
 def getCycles(c, filtre="Tout"):
     if filtre == "Tout":
         c.execute(
-            "SELECT id, bassin_id, date_rempli, date_vide, surface FROM Cycles WHERE date_vide = '' ")
+            "SELECT id, bassin_id, date_rempli, date_vide, surface FROM Cycles WHERE date_vide = ''")
     else:
         cmd = f"SELECT Cycles.id, Cycles.bassin_id, Cycles.date_rempli, Cycles.date_vide,  Cycles.surface FROM Cycles, Especes, Lots WHERE Cycles.id=Lots.cycle_id AND Lots.espece_id=Especes.id AND Cycles.date_vide = '' AND Especes.type='{filtre}'"
         c.execute(cmd)
@@ -112,22 +112,22 @@ def findClosestNombreParLivre(nbrParLivre, croissance):
     return closest[1]
 
 
-def getTotalActuelStat(c, lot_id, totSem, totPech, totAct, mortAct, quantPech):
+def getTotalActuelStat(c, lot_id, quantSem, quantPech, quantAct, mortAct):
     c.execute(
         f'SELECT quantitelb, mortalite  FROM Statistiques WHERE lot_id = "{lot_id}" ORDER BY date DESC')
     temp = c.fetchone()
     if temp == None:
-        return -100000000
+        return -100000000, None
     cant, mort = temp
-    if totPech is None:
-        totPech = 0
-    if totAct == None:
-        totAct = 0
+    if quantPech is None:
+        quantPech = 0
+    if quantAct == None:
+        quantAct = 0
     if mort == None or cant == None:
-        return -100000000
-    poids = (totSem - ((totSem - totPech - totAct)
-                       * mort) / mortAct - quantPech) / cant
-    return poids
+        return -100000000, None
+    poids = (quantSem - ((quantSem - quantPech - quantAct)
+                         * mort) / mortAct - quantPech) / cant
+    return poids, mort
 
 
 def getTotalActuel(c, lot_id, espece_id):
@@ -283,11 +283,12 @@ class Cycles(Resource):
             cycle['Alimentacion téo'] = 0
             cycle['Peso actual Stat'] = 0
             mort = []
+            mortStat = []
             weights = []
             for j, lot in enumerate(lots):
                 totPech, quantPech = getTotalPeches(c, lot[0])
                 cycle['Peso pescado'] += totPech
-                totSem = getTotalSemis(c, lot[0])[0]
+                totSem, quantSem = getTotalSemis(c, lot[0])
                 cycle['Peso sembrado'] += totSem
                 temp = getTotalActuel(c, lot[0], lot[1])
                 cycle['Alimentacion téo'] += temp[4]
@@ -296,8 +297,13 @@ class Cycles(Resource):
                     (cycle['# meses'], temp[2]))
                 mort.append(temp[3])
                 weights.append(temp[0])
-                cycle['Peso actual Stat'] += getTotalActuelStat(
-                    c, lot[0], totSem, totPech, temp[1], temp[3], quantPech)
+                temp = getTotalActuelStat(
+                    c, lot[0], quantSem, quantPech, temp[0], temp[3])
+                cycle['Peso actual Stat'] += temp[0]
+                if temp[1] != None:
+                    mortStat.append(temp[1])
+                else:
+                    mortStat.append(mort[-1])
             aliTotal = getAliTotal(c, cycle['Estanque'], cycle['Fecha lleno'])
             if cycle['Peso actual Stat'] <= -100000000:
                 pUtile = cycle['Peso actual']
@@ -309,6 +315,8 @@ class Cycles(Resource):
             try:
                 cycle['Mortalidad'] = str(
                     round(average(mort, weights=weights)*100)) + " %"
+                cycle['Mortalidad Stat'] = str(
+                    round(average(mortStat, weights=weights)*100)) + " %"
             except:
                 print("Weight are null")
             cycle['Alimentacion téo'] = round(cycle['Alimentacion téo'], 1)
