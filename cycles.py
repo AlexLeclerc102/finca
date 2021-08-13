@@ -18,7 +18,7 @@ dbPath = "database.db"
 def getCycles(c, filtre="Tout"):
     if filtre == "Tout":
         c.execute(
-            "SELECT id, bassin_id, date_rempli, date_vide, surface FROM Cycles WHERE date_vide = ''")
+            "SELECT id, bassin_id, date_rempli, date_vide, surface FROM Cycles WHERE date_vide = '' ")
     else:
         cmd = f"SELECT Cycles.id, Cycles.bassin_id, Cycles.date_rempli, Cycles.date_vide,  Cycles.surface FROM Cycles, Especes, Lots WHERE Cycles.id=Lots.cycle_id AND Lots.espece_id=Especes.id AND Cycles.date_vide = '' AND Especes.type='{filtre}'"
         c.execute(cmd)
@@ -305,18 +305,22 @@ class Cycles(Resource):
                 else:
                     mortStat.append(mort[-1])
             aliTotal = getAliTotal(c, cycle['Estanque'], cycle['Fecha lleno'])
+            cycle['Alimentacion total'] = aliTotal
             if cycle['Peso actual Stat'] <= -100000000:
                 pUtile = cycle['Peso actual']
             else:
                 pUtile = cycle['Peso actual Stat']
+                cycle['Peso actual'] = round(cycle['Peso actual Stat'])
             if aliTotal != 0:
                 cycle['Indice de conversion'] = round(aliTotal / (
                     cycle['Peso pescado'] + pUtile - cycle['Peso sembrado']), 2)
             try:
                 cycle['Mortalidad'] = str(
                     round(average(mort, weights=weights)*100)) + " %"
-                cycle['Mortalidad Stat'] = str(
-                    round(average(mortStat, weights=weights)*100)) + " %"
+                morta = round(average(mortStat, weights=weights)*100)
+                cycle['Mortalidad Stat'] = str(morta) + " %"
+                if morta > 0:
+                    cycle['Mortalidad'] = cycle['Mortalidad Stat']
             except:
                 print("Weight are null")
             cycle['Alimentacion téo'] = round(cycle['Alimentacion téo'], 1)
