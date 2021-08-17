@@ -190,8 +190,9 @@ def getTotalActuel(c, lot_id, espece_id):
         total_poisson = total_poisson * (1-taux_hebdomaire)
         for semi in semis:
             if semaine == semi['nbr_semaines']:
-                moyNbrLivre = (moyNbrLivre * total_poisson + ((
-                    semi['quantite'] / semi['poids']) * semi['quantite'])) / (total_poisson + semi['quantite'])
+                if semi['poids'] != 0 and semi['quantite'] != 0:
+                    moyNbrLivre = (moyNbrLivre * total_poisson + ((
+                        semi['quantite'] / semi['poids']) * semi['quantite'])) / (total_poisson + semi['quantite'])
 
                 total_poisson += semi['quantite'] * (1-taux_initial)
                 total_semi += semi['quantite']
@@ -262,7 +263,8 @@ class Cycles(Resource):
             espece_ids = []
             cycle['Alimentacion'] = 0
             for j, lot in enumerate(lots):
-                cycle['Alimentacion'] += lot[3]
+                if lot[3] != None:
+                    cycle['Alimentacion'] += lot[3]
                 if lot[1] not in espece_ids:
                     espece_ids.append(lot[1])
             pop_list_lot.reverse()
@@ -483,8 +485,10 @@ class LotData(Resource):
             sem["fecha"] = changeDate(s[1])
             sem["cantidad"] = round(s[2])
             sem["peso"] = round(s[3], 2)
-            sem["gr/unidad"] = round(s[3] * 454 / s[2], 2)
-            sem["cant/lb"] = round(s[2] / s[3], 2)
+            if s[2] != 0:
+                sem["gr/unidad"] = round(s[3] * 454 / s[2], 2)
+            if s[3] != 0:
+                sem["cant/lb"] = round(s[2] / s[3], 2)
             sem["comentario"] = s[4]
             sem["lot_id"] = s[5]
             semis[i] = sem
