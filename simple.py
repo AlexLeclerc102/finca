@@ -241,9 +241,12 @@ class Alimentation(Resource):
     @flask_praetorian.auth_required
     def post(self):
         data = request.json
+        print(data)
         bassin = data["bassin"]
-        poids = data["poids"]
+        poids = int(data["poids"])
         poids_pm = data["poids_pm"]
+        if poids_pm == "":
+            poids_pm = 0
         aliment = data["aliment"]
         date = data["date"]
         conn = sqlite3.connect(dbPath)
