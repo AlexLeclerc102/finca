@@ -125,8 +125,12 @@ def getTotalActuelStat(c, lot_id, quantSem, quantPech, quantAct, mortAct):
         quantAct = 0
     if mort == None or cant == None:
         return -100000000, None
-    poids = (quantSem - ((quantSem - quantPech - quantAct)
-                         * mort) / mortAct - quantPech) / cant
+    if cant != 0 and mortAct != 0:
+        poids = (quantSem - ((quantSem - quantPech - quantAct)
+                             * mort) / mortAct - quantPech) / cant
+    else:
+        print(lot_id)
+        poids = 0
     return poids, mort
 
 
