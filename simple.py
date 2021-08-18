@@ -203,7 +203,8 @@ class Alimentation(Resource):
             lots = getLots(c, cycle[0])
             d['poids aliment a donner'] = 0
             for l in lots:
-                d['poids aliment a donner'] += l[3]
+                if l[3] != None:
+                    d['poids aliment a donner'] += l[3]
             for j, name in enumerate(names):
                 if name == "bassin id":
                     d["Bassin"] = bassin

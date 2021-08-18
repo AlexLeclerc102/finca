@@ -317,7 +317,7 @@ class Cycles(Resource):
             else:
                 pUtile = cycle['Peso actual Stat']
                 cycle['Peso actual'] = round(cycle['Peso actual Stat'])
-            if aliTotal != 0:
+            if aliTotal != 0 and aliTotal != None:
                 cycle['Indice de conversion'] = round(aliTotal / (
                     cycle['Peso pescado'] + pUtile - cycle['Peso sembrado']), 2)
             try:
