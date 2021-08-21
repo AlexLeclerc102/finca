@@ -215,6 +215,9 @@ class Alimentation(Resource):
             c.execute(
                 f"SELECT TypeAliment.id, AlimentationJournalieres.poids, AlimentationJournalieres.poids_pm, AlimentationJournalieres.maj FROM AlimentationJournalieres, TypeAliment WHERE AlimentationJournalieres.type_aliment_id=TypeAliment.id AND AlimentationJournalieres.date='{date}' AND AlimentationJournalieres.bassin_id={id_bassin}")
             alimentation = c.fetchone()
+            c.execute(
+                f"SELECT TypeAliment.libelle, sum(AlimentationJournalieres.poids) FROM AlimentationJournalieres, TypeAliment WHERE AlimentationJournalieres.type_aliment_id=TypeAliment.id AND AlimentationJournalieres.date='{date}' GROUP BY TypeAliment.libelle")
+            total = c.fetchall()
             d["ali"] = alimentation != None
             if d["ali"]:
                 d["Type_Aliment"] = alimentation[0]
@@ -224,7 +227,7 @@ class Alimentation(Resource):
             elif cycle[5] != None:
                 d["Type_Aliment"] = cycle[5]
             select[i] = d
-        return {"cycles": select, "aliments": aliments, "date": date}, 200
+        return {"cycles": select, "aliments": aliments, "date": date, "total": total}, 200
 
     @flask_praetorian.auth_required
     def put(self):
