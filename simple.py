@@ -257,7 +257,9 @@ class Alimentation(Resource):
         c.execute(
             f"SELECT Cycles.id, Cycles.type_aliment_id FROM Cycles, Bassins WHERE Cycles.bassin_id = Bassins.id AND Cycles.date_vide = '' AND Bassins.libelle = '{bassin}' ORDER BY Cycles.date_rempli DESC")
         cycle = c.fetchone()
+        print(cycle, aliment)
         if cycle[1] != aliment:
+            print("here")
             c.execute(
                 f"UPDATE Cycles SET type_aliment_id = {aliment} WHERE id = {cycle[0]}")
         c.execute(
@@ -269,7 +271,7 @@ class Alimentation(Resource):
         if len(fetch) > 0:
             id = fetch[0][0]
             c.execute(
-                f'UPDATE AlimentationJournalieres SET poids = {poids}, poids_pm = {poids_pm}, maj = 1 WHERE id = {id}')
+                f'UPDATE AlimentationJournalieres SET poids = {poids}, poids_pm = {poids_pm}, type_aliment_id= {aliment}, maj = 1 WHERE id = {id}')
             changementStock(c, aliment, date, poids - fetch[0][2])
             conn.commit()
             conn.close()

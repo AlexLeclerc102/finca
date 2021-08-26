@@ -302,7 +302,7 @@ class Cycles(Resource):
                 cycle['# meses'] = max(
                     (cycle['# meses'], temp[2]))
                 mort.append(temp[3])
-                weights.append(temp[0])
+                weights.append(quantSem)
                 temp = getTotalActuelStat(
                     c, lot[0], quantSem, quantPech, temp[0], temp[3])
                 cycle['Peso actual Stat'] += temp[0]
@@ -322,8 +322,8 @@ class Cycles(Resource):
                     cycle['Peso pescado'] + pUtile - cycle['Peso sembrado']), 2)
             try:
                 cycle['Mortalidad'] = str(
-                    round(average(mort, weights=weights)*100)) + " %"
-                morta = round(average(mortStat, weights=weights)*100)
+                    round(average(mort, weights=weights)*100, 1)) + " %"
+                morta = round(average(mortStat, weights=weights)*100, 1)
                 cycle['Mortalidad Stat'] = str(morta) + " %"
                 if morta > 0:
                     cycle['Mortalidad'] = cycle['Mortalidad Stat']
