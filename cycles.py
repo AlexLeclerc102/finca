@@ -318,8 +318,9 @@ class Cycles(Resource):
                 pUtile = cycle['Peso actual Stat']
                 cycle['Peso actual'] = round(cycle['Peso actual Stat'])
             if aliTotal != 0 and aliTotal != None:
-                cycle['Indice de conversion'] = round(aliTotal / (
-                    cycle['Peso pescado'] + pUtile - cycle['Peso sembrado']), 2)
+                if cycle['Peso pescado'] + pUtile - cycle['Peso sembrado'] != 0:
+                    cycle['Indice de conversion'] = round(aliTotal / (
+                        cycle['Peso pescado'] + pUtile - cycle['Peso sembrado']), 2)
             try:
                 cycle['Mortalidad'] = str(
                     round(average(mort, weights=weights)*100, 1)) + " %"
