@@ -4,6 +4,7 @@ import flask
 from flask import request
 import flask_praetorian
 import flask_cors
+from flask import got_request_exception
 import sqlite3
 from flask_restful import Resource, Api
 from models import db, User
@@ -14,6 +15,7 @@ from utils import changeDate, changeDateBack
 from simple import Pompes, Bassins, ShowTable, Alimentation, EspecesRes, ChangementEau, Notifications
 from ventes import EspecesVente, VenteCrevette, VentePoissons, VentePoissonsJour
 from analyseEau import AnalyseEau, AnalyseEauGraph, AnalyseOx
+from emailUser import sendErrorMail
 
 guard = flask_praetorian.Praetorian()
 cors = flask_cors.CORS()
@@ -42,6 +44,7 @@ cors.init_app(app)
 
 # Initializes Api
 api = Api(app)
+
 
 def log_exception(sender, exception, **extra):
     """ Log an exception to our logging framework """
