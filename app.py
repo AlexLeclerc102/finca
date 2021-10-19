@@ -43,6 +43,13 @@ cors.init_app(app)
 # Initializes Api
 api = Api(app)
 
+def log_exception(sender, exception, **extra):
+    """ Log an exception to our logging framework """
+    sendErrorMail(sender, exception)
+
+
+got_request_exception.connect(log_exception, app)
+
 # Add users for the example
 with app.app_context():
     db.create_all()
