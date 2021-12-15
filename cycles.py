@@ -53,10 +53,10 @@ def getAncienCycle(c, bassin, dateDebut, dateFin):
             f"SELECT id, bassin_id, date_rempli, date_vide, surface FROM Cycles WHERE bassin_id={bassin} AND date_rempli >= '{dateDebut}' AND date_rempli < '{dateFin}' ")
     names = list(map(lambda x: x[0].replace('_', ' '), c.description))
     select = c.fetchall()
-    for i, _ in enumerate(select):
+    for i, yes in enumerate(select):
         id_bassin = select[i][1]
         c.execute(f"SELECT libelle FROM Bassins WHERE id = {id_bassin}")
-        bassin = c.fetchall()[0][0]
+        bas = c.fetchall()[0][0]
         d = dict()
         for j, name in enumerate(names):
             if name == "date rempli":
@@ -64,13 +64,17 @@ def getAncienCycle(c, bassin, dateDebut, dateFin):
             elif name == "date vide" and select[i][j] != "":
                 d["Fecha vacio"] = changeDate(select[i][j])
             elif name == "bassin id":
-                d["Estanque"] = bassin
+                d["Estanque"] = bas
             elif name == "surface":
                 d['Superficie'] = select[i][j]
             else:
                 d[name] = select[i][j]
-        d["# meses"] = round((datetime.strptime(d["Fecha vacio"], '%d/%m/%Y') -
-                              datetime.strptime(d["Fecha lleno"], '%d/%m/%Y')).days / 30.41, 2)
+        if "Fecha vacio" in d.keys():
+            d["# meses"] = round((datetime.strptime(d["Fecha vacio"], '%d/%m/%Y') -
+                                  datetime.strptime(d["Fecha lleno"], '%d/%m/%Y')).days / 30.41, 2)
+        else:
+            d["# meses"] = round((datetime.now() -
+                                  datetime.strptime(d["Fecha lleno"], '%d/%m/%Y')).days / 30.41, 2)
         select[i] = d
     return select
 
@@ -421,6 +425,17 @@ class AncienCycle(Resource):
                                                  0.454 / cycle['Superficie'] * 10000 / cycle['# meses'] * 12)
         conn.close()
         return {"cycles": cycles}, 200
+
+
+class AncienLots(Resource):
+    @flask_praetorian.auth_required
+    def get(self, cycle_id):
+        conn = sqlite3.connect(dbPath)
+        c = conn.cursor()
+        c.execute(
+            f"SELECT Bassins.libelle, Cycles.id, Lots.id, Lots.commentaire, Especes.libelle, Lots.termine FROM Bassins, Cycles, Lots, Especes WHERE Cycles.bassin_id = Bassins.id AND Cycles.id = Lots.cycle_id AND Especes.id = Lots.espece_id AND Cycles.id={cycle_id} ")
+        lots = c.fetchall()
+        return {"message": "success", "lotsList": lots}, 200
 
 
 class Lots(Resource):

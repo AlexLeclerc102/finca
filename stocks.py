@@ -62,17 +62,17 @@ class VenteAliments(Resource):
 
     @flask_praetorian.auth_required
     def post(self):
-        data = request.json
+        listdata = request.json
+        date = listdata['date']
         conn = sqlite3.connect(dbPath)
         c = conn.cursor()
-        changementStockVente(c, data['typeAliment'],
-                             data['date'], data['quantite'])
-        if data['commentaire'] != '':
+        for data in listdata['commandes']:
+            changementStockVente(c, data['typeId'],
+                                 date, data['Cantidad'])
+            com = data['Cantidad'] + " sacos " + \
+                data['Precio Total'] + " pesos"
             c.execute(
-                f"INSERT INTO VentesAliments (type_aliment_id, client, date, quantite, commentaire) VALUES ( {data['typeAliment']}, {data['clientId']}, '{data['date']}', {data['quantite']},  '{data['commentaire']}' )")
-        else:
-            c.execute(
-                f"INSERT INTO VentesAliments (type_aliment_id, client, date, quantite) VALUES ( {data['typeAliment']}, {data['clientId']}, '{data['date']}', {data['quantite']} )")
+                f"INSERT INTO VentesAliments (type_aliment_id, client, date, quantite, commentaire) VALUES ( {data['typeId']}, {data['clientId']}, '{date}', {data['Cantidad']}, '{com}' )")
         conn.commit()
         conn.close()
         return {"message": "Vente ajoutée"}, 200

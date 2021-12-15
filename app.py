@@ -8,7 +8,7 @@ from flask import got_request_exception
 import sqlite3
 from flask_restful import Resource, Api
 from models import db, User
-from cycles import Cycles, LotData, Peches, Semis, Stats, Lots, AncienCycle
+from cycles import AncienLots, Cycles, LotData, Peches, Semis, Stats, Lots, AncienCycle
 from stocks import Stocks, VenteAliments, Clients
 from user import UserList
 from utils import changeDate, changeDateBack
@@ -26,8 +26,8 @@ app = flask.Flask(__name__, static_folder='./build', static_url_path='/')
 app.debug = True
 app.config['SECRET_KEY'] = 'dsfnqsdjgqghksfjgfnjksfd'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_ACCESS_LIFESPAN'] = {'hours': 24}
-app.config['JWT_REFRESH_LIFESPAN'] = {'days': 30}
+app.config['JWT_ACCESS_LIFESPAN'] = {'days': 7}
+app.config['JWT_REFRESH_LIFESPAN'] = {'days': 31}
 
 # Initialize the flask-praetorian instance for the app
 with app.app_context():
@@ -104,7 +104,7 @@ class Refresh(Resource):
         $ curl http://localhost:5000/api/refresh -X GET \
             -H "Authorization: Bearer <your_token>"
         """
-        old_token = request.get_data()
+        old_token = guard.read_token_from_header()
         new_token = guard.refresh_jwt_token(old_token)
         ret = {'access_token': new_token}
         return ret, 200
@@ -191,6 +191,7 @@ api.add_resource(AnalyseOx, '/api/analyseOx')
 api.add_resource(AnalyseEauGraph, '/api/analyseEauGraph/<bassin>/<date>')
 api.add_resource(LotData, '/api/lotData/<lot_id>')
 api.add_resource(Lots, '/api/lots')
+api.add_resource(AncienLots, '/api/ancienLots/<cycle_id>')
 api.add_resource(Alimentation, '/api/alimentation', '/api/alimentation/<date>')
 api.add_resource(Pompes, '/api/pompes')
 api.add_resource(EspecesRes, '/api/especes')
