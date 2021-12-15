@@ -295,6 +295,7 @@ class Cycles(Resource):
             mort = []
             mortStat = []
             weights = []
+            gotStat = False
             for j, lot in enumerate(lots):
                 totPech, quantPech = getTotalPeches(c, lot[0])
                 cycle['Peso pescado'] += totPech
@@ -309,14 +310,16 @@ class Cycles(Resource):
                 weights.append(quantSem)
                 temp = getTotalActuelStat(
                     c, lot[0], quantSem, quantPech, temp[0], temp[3])
-                cycle['Peso actual Stat'] += temp[0]
+                if temp[0] >= 0:
+                    cycle['Peso actual Stat'] += temp[0]
+                    gotStat = True
                 if temp[1] != None:
                     mortStat.append(temp[1])
                 else:
                     mortStat.append(mort[-1])
             aliTotal = getAliTotal(c, cycle['Estanque'], cycle['Fecha lleno'])
             cycle['Alimentacion total'] = aliTotal
-            if cycle['Peso actual Stat'] <= -100000000:
+            if not gotStat:
                 pUtile = cycle['Peso actual']
             else:
                 pUtile = cycle['Peso actual Stat']
