@@ -12,7 +12,7 @@ from cycles import AncienLots, Cycles, LotData, Peches, Semis, Stats, Lots, Anci
 from stocks import Stocks, VenteAliments, Clients
 from user import UserList
 from utils import changeDate, changeDateBack
-from simple import Pompes, Bassins, ShowTable, Alimentation, EspecesRes, ChangementEau, Notifications
+from simple import Aliment, AlimentationTotal, Pompes, Bassins, ShowTable, Alimentation, EspecesRes, ChangementEau, Notifications
 from ventes import EspecesVente, VenteCrevette, VentePoissons, VentePoissonsJour
 from analyseEau import AnalyseEau, AnalyseEauGraph, AnalyseOx
 from emailUser import sendErrorMail
@@ -193,6 +193,7 @@ api.add_resource(LotData, '/api/lotData/<lot_id>')
 api.add_resource(Lots, '/api/lots')
 api.add_resource(AncienLots, '/api/ancienLots/<cycle_id>')
 api.add_resource(Alimentation, '/api/alimentation', '/api/alimentation/<date>')
+api.add_resource(AlimentationTotal, '/api/alimentationTotal/<date>')
 api.add_resource(Pompes, '/api/pompes')
 api.add_resource(EspecesRes, '/api/especes')
 api.add_resource(EspecesVente, '/api/especes/poissons')
@@ -205,6 +206,7 @@ api.add_resource(Clients, '/api/clients', '/api/clients/<client>')
 api.add_resource(Stocks, '/api/stocks/<dateLimit>', '/api/stocks')
 api.add_resource(ChangementEau, '/api/changementEau')
 api.add_resource(Notifications, '/api/notifications')
+api.add_resource(Aliment, '/api/aliments')
 api.add_resource(VentePoissons, '/api/ventes/poissons/<espece>',
                  '/api/ventes/poissons')
 api.add_resource(VentePoissonsJour, '/api/ventes/poissonsJour/<espece>/<date>')

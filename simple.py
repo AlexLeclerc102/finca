@@ -33,6 +33,19 @@ class Pompes(Resource):
         return {"message": "Changement d'eau crée"}, 200
 
 
+class Aliment(Resource):
+    @flask_praetorian.auth_required
+    def post(self):
+        data = request.json
+        conn = sqlite3.connect(dbPath)
+        c = conn.cursor()
+        c.execute(
+            f"INSERT INTO TypeAliment (libelle) VALUES ('{data['libelle']}')")
+        conn.commit()
+        conn.close()
+        return {"message": "Aliment crée"}, 200
+
+
 class ChangementEau(Resource):
     @flask_praetorian.auth_required
     def get(self):
@@ -184,6 +197,18 @@ def changementStock(c, id_aliment, date, alimentation, commentaire="."):
             f"UPDATE Stock SET stock = {s[3] - int(alimentation)} WHERE id={s[0]}")
 
 
+class AlimentationTotal(Resource):
+    @flask_praetorian.auth_required
+    def get(self, date=datetime.now().strftime("%Y-%m-%d")):
+        conn = sqlite3.connect(dbPath)
+        c = conn.cursor()
+        print(date)
+        c.execute(
+            f"SELECT TypeAliment.libelle, sum(AlimentationJournalieres.poids) FROM AlimentationJournalieres, TypeAliment WHERE AlimentationJournalieres.type_aliment_id=TypeAliment.id AND AlimentationJournalieres.date='{date}' GROUP BY TypeAliment.libelle")
+        total = c.fetchall()
+        return {"date": date, "total": total}, 200
+
+
 class Alimentation(Resource):
     @flask_praetorian.auth_required
     def get(self, date=datetime.now().strftime("%Y-%m-%d")):
@@ -215,9 +240,6 @@ class Alimentation(Resource):
             c.execute(
                 f"SELECT TypeAliment.id, AlimentationJournalieres.poids, AlimentationJournalieres.poids_pm, AlimentationJournalieres.maj FROM AlimentationJournalieres, TypeAliment WHERE AlimentationJournalieres.type_aliment_id=TypeAliment.id AND AlimentationJournalieres.date='{date}' AND AlimentationJournalieres.bassin_id={id_bassin}")
             alimentation = c.fetchone()
-            c.execute(
-                f"SELECT TypeAliment.libelle, sum(AlimentationJournalieres.poids) FROM AlimentationJournalieres, TypeAliment WHERE AlimentationJournalieres.type_aliment_id=TypeAliment.id AND AlimentationJournalieres.date='{date}' GROUP BY TypeAliment.libelle")
-            total = c.fetchall()
             d["ali"] = alimentation != None
             if d["ali"]:
                 d["Type_Aliment"] = alimentation[0]
@@ -227,7 +249,7 @@ class Alimentation(Resource):
             elif cycle[5] != None:
                 d["Type_Aliment"] = cycle[5]
             select[i] = d
-        return {"cycles": select, "aliments": aliments, "date": date, "total": total}, 200
+        return {"cycles": select, "aliments": aliments, "date": date}, 200
 
     @flask_praetorian.auth_required
     def put(self):

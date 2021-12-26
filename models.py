@@ -252,7 +252,7 @@ class Clients(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     libelle = db.Column(db.String(100))
     adresse = db.Column(db.String(100))
-    cedula = db.Column(db.Integer)
+    cedula = db.Column(db.String(100))
 
 
 class VentesAliments(db.Model):

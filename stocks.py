@@ -68,11 +68,11 @@ class VenteAliments(Resource):
         c = conn.cursor()
         for data in listdata['commandes']:
             changementStockVente(c, data['typeId'],
-                                 date, data['Cantidad'])
-            com = data['Cantidad'] + " sacos " + \
+                                 date, data['Lbs'])
+            com = data['Lbs'] + " lbs " + \
                 data['Precio Total'] + " pesos"
             c.execute(
-                f"INSERT INTO VentesAliments (type_aliment_id, client, date, quantite, commentaire) VALUES ( {data['typeId']}, {data['clientId']}, '{date}', {data['Cantidad']}, '{com}' )")
+                f"INSERT INTO VentesAliments (type_aliment_id, client, date, quantite, commentaire) VALUES ( {data['typeId']}, {data['clientId']}, '{date}', {data['Lbs']}, '{com}' )")
         conn.commit()
         conn.close()
         return {"message": "Vente ajoutée"}, 200
