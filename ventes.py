@@ -61,6 +61,11 @@ class VenteCrevette(Resource):
         data = request.json
         conn = sqlite3.connect(dbPath)
         c = conn.cursor()
+        c.execute(f"SELECT id FROM VentesCrevette WHERE date='{data['date']}'")
+        temp = c.fetchall()
+        print(temp, data['date'])
+        if len(temp) > 0:
+            return {"message": "Fecha ya introducida"}, 200
         c.execute(
             f"INSERT INTO VentesCrevette (date, u5, u6, u8, u10, u12, u15, u16_u20, u21_u25, decortique) VALUES ( '{data['date']}' , {data['u5']},{data['u6']},{data['u8']}, {data['u10']},{data['u12']} , {data['u15']}, {data['u16_u20']}, {data['u21_u25']}, {data['decortique']})")
         conn.commit()
@@ -72,11 +77,12 @@ class VenteCrevette(Resource):
         data = request.json
         conn = sqlite3.connect(dbPath)
         c = conn.cursor()
+        print(data)
         c.execute(
-            f"UPDATE VentesCrevette SET date='{changeDateBack(data['date'])}', u5={data['u5']}, u6={data['u6']}, u8={data['u8']}, u10={data['u10']}, u12={data['u12']}, u15={data['u15']}, u16_u20={data['u16_u20']}, u21_u25={data['u21_u25']}, decortique={data['decortique']} WHERE id={data['id']}")
+            f"UPDATE VentesCrevette SET date='{changeDateBack(data['fecha'])}', u5={data['u5']}, u6={data['u6']}, u8={data['u8']}, u10={data['u10']}, u12={data['u12']}, u15={data['u15']}, u16_u20={data['u16/20']}, u21_u25={data['u21/25']}, decortique={data['pelado']} WHERE id={data['id']}")
         conn.commit()
         conn.close()
-        return {"message": "Ajout effectué"}, 200
+        return {"message": "Modification terminée"}, 200
 
 
 class VentePoissons(Resource):
