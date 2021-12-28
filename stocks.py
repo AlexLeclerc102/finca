@@ -45,7 +45,7 @@ def changementStockInventaire(c, id_aliment, date, stock, commentaire="."):
             f"UPDATE Stock SET stock = {stock}, ajustement = {last[6] + ajustement}, commentaire = '{commentaire}' WHERE id={last[0]}")
     for s in stocks:
         c.execute(
-            f"UPDATE Stock SET stock = {s[3] - int(ajustement)} WHERE id={s[0]}")
+            f"UPDATE Stock SET stock = {s[3] + int(ajustement)} WHERE id={s[0]}")
 
 
 class VenteAliments(Resource):
