@@ -35,14 +35,20 @@ def changementStockInventaire(c, id_aliment, date, stock, commentaire="."):
     c.execute(
         f"SELECT * FROM Stock WHERE type_aliment_id={id_aliment} AND date <='{date}' ORDER BY date DESC LIMIT 1")
     last = c.fetchone()
-    ajustement = int(stock) - last[3]
+    if last is not None:
+        ajustement = int(stock) - last[3]
+    else:
+        ajustement = int(stock)
 
-    if last[2] != date:
+    if last is not None and last[2] != date:
         c.execute(
             f"INSERT INTO Stock (type_aliment_id, date, stock, ajustement, commentaire, alimentation, vente, entre) VALUES ({id_aliment}, '{date}', {stock}, {ajustement}, '{commentaire}', 0, 0, 0)")
-    else:
+    elif last is not None:
         c.execute(
             f"UPDATE Stock SET stock = {stock}, ajustement = {last[6] + ajustement}, commentaire = '{commentaire}' WHERE id={last[0]}")
+    else:
+        c.execute(
+            f"INSERT INTO Stock (type_aliment_id, date, stock, ajustement, commentaire, alimentation, vente, entre) VALUES ({id_aliment}, '{date}', {stock}, {ajustement}, '{commentaire}', 0, 0, {ajustement})")
     for s in stocks:
         c.execute(
             f"UPDATE Stock SET stock = {s[3] + int(ajustement)} WHERE id={s[0]}")
@@ -69,8 +75,9 @@ class VenteAliments(Resource):
         for data in listdata['commandes']:
             changementStockVente(c, data['typeId'],
                                  date, data['Lbs'])
-            com = data['Lbs'] + " lbs " + \
-                data['Precio Total'] + " pesos"
+            com = str(data['Lbs']) + " lbs " + \
+                str(data['Precio Total']) + " pesos " + \
+                str(data['Cantidad de sacos']) + " sacos"
             c.execute(
                 f"INSERT INTO VentesAliments (type_aliment_id, client, date, quantite, commentaire) VALUES ( {data['typeId']}, {data['clientId']}, '{date}', {data['Lbs']}, '{com}' )")
         conn.commit()
