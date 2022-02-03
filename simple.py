@@ -266,9 +266,11 @@ class Alimentation(Resource):
     @flask_praetorian.auth_required
     def post(self):
         data = request.json
-        print(data)
         bassin = data["bassin"]
-        poids = int(data["poids"])
+        if data['poids'] != '':
+            poids = int(data["poids"])
+        else:
+            poids = 0
         poids_pm = data["poids_pm"]
         if poids_pm == "":
             poids_pm = 0
