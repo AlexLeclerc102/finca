@@ -8,6 +8,25 @@ import time
 dbPath = "database.db"
 
 
+def changementStockEntre(c, id_aliment, date, entre, commentaire="."):
+    c.execute(
+        f"SELECT * FROM Stock WHERE type_aliment_id={id_aliment} AND date>'{date}' ORDER BY date ASC")
+    stocks = c.fetchall()
+    c.execute(
+        f"SELECT * FROM Stock WHERE type_aliment_id={id_aliment} AND date <='{date}' ORDER BY date DESC LIMIT 1")
+    last = c.fetchone()
+    stock = last[3] + float(entre)
+    if last[2] != date:
+        c.execute(
+            f"INSERT INTO Stock (type_aliment_id, date, stock, vente, commentaire, alimentation, ajustement, entre) VALUES ({id_aliment}, '{date}', {stock}, 0, '{commentaire}', 0, 0, {entre})")
+    else:
+        c.execute(
+            f"UPDATE Stock SET stock = {stock}, entre = {last[7] + float(entre)}, commentaire = '{commentaire}' WHERE id={last[0]}")
+    for s in stocks:
+        c.execute(
+            f"UPDATE Stock SET stock = {s[3] + float(entre)} WHERE id={s[0]}")
+
+
 def changementStockVente(c, id_aliment, date, vente, commentaire="."):
     c.execute(
         f"SELECT * FROM Stock WHERE type_aliment_id={id_aliment} AND date>'{date}' ORDER BY date ASC")
@@ -16,7 +35,6 @@ def changementStockVente(c, id_aliment, date, vente, commentaire="."):
         f"SELECT * FROM Stock WHERE type_aliment_id={id_aliment} AND date <='{date}' ORDER BY date DESC LIMIT 1")
     last = c.fetchone()
     stock = last[3] - float(vente)
-    print(stocks, last, stock)
     if last[2] != date:
         c.execute(
             f"INSERT INTO Stock (type_aliment_id, date, stock, vente, commentaire, alimentation, ajustement, entre) VALUES ({id_aliment}, '{date}', {stock}, {vente}, '{commentaire}', 0, 0, 0)")
@@ -80,6 +98,21 @@ class VenteAliments(Resource):
                 str(data['Cantidad de sacos']) + " sacos"
             c.execute(
                 f"INSERT INTO VentesAliments (type_aliment_id, client, date, quantite, commentaire) VALUES ( {data['typeId']}, {data['clientId']}, '{date}', {data['Lbs']}, '{com}' )")
+        conn.commit()
+        conn.close()
+        return {"message": "Vente ajoutée"}, 200
+
+
+class Entre(Resource):
+    @flask_praetorian.auth_required
+    def post(self):
+        data = request.json
+        print(data)
+        date = changeDateBack(data['date'])
+        conn = sqlite3.connect(dbPath)
+        c = conn.cursor()
+        changementStockEntre(c, data['id'],
+                             date, data['entre'], data['commentaire'])
         conn.commit()
         conn.close()
         return {"message": "Vente ajoutée"}, 200
@@ -164,27 +197,27 @@ class Clients(Resource):
 
 class Stocks(Resource):
     @flask_praetorian.auth_required
-    def get(self, dateLimit):
+    def get(self, filtre, dateDebut):
         conn = sqlite3.connect(dbPath)
         c = conn.cursor()
-        c.execute(f"SELECT id, libelle FROM TypeAliment")
+        print(filtre)
+        c.execute(
+            f"SELECT id, libelle FROM TypeAliment")
         TypeAl = c.fetchall()
-        stocks = []
-        for t in TypeAl:
-            d = dict()
-            d["typeAlimentId"] = t[0]
-            d["typeAlimentLibelle"] = t[1]
-            c.execute(
-                f"SELECT id, date, stock, alimentation, entre, vente, ajustement, commentaire FROM Stock WHERE type_aliment_id= {t[0]} AND date >= '{dateLimit}'  ORDER BY date DESC")
-            stock = c.fetchall()
-            for i, item in enumerate(stock):
-                b = dict()
-                for j, name in enumerate(["id", "Date", "Stock", "Alimentation", "Entrée", "Ventes", "Ajustement",
-                                          "Commentaire"]):
-                    b[name] = stock[i][j]
-                stock[i] = b
-            d["stock"] = stock
-            stocks.append(d)
+        traduction = {"id": "id", "Date": "Fecha", "Stock": "Stock", "Entrée": "Compras", "Ventes": "Ventas",
+                      "Ajustement": "Diff de stock", "Commentaire": "Comentario", "Alimentation": "Alimentacion"}
+        c.execute(
+            f"SELECT id, date, stock, alimentation, entre, vente, ajustement, commentaire FROM Stock WHERE type_aliment_id= {filtre} AND date >= '{dateDebut}'  ORDER BY date DESC")
+        stocks = c.fetchall()
+        for i, item in enumerate(stocks):
+            b = dict()
+            for j, name in enumerate(["id", "Date", "Stock", "Alimentation", "Entrée", "Ventes", "Ajustement",
+                                      "Commentaire"]):
+                if name == "Date":
+                    b[traduction[name]] = changeDate(stocks[i][j])
+                else:
+                    b[traduction[name]] = stocks[i][j]
+            stocks[i] = b
         conn.close()
         return {"stocks": stocks, "alimentList": TypeAl}, 200
 
