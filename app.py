@@ -9,7 +9,7 @@ import sqlite3
 from flask_restful import Resource, Api
 from models import db, User
 from cycles import AncienLots, Cycles, LotData, Peches, Semis, Stats, Lots, AncienCycle
-from stocks import Stocks, VenteAliments, Clients
+from stocks import Stocks, VenteAliments, Clients, Entre
 from user import UserList
 from utils import changeDate, changeDateBack
 from simple import Aliment, AlimentationTotal, Pompes, Bassins, ShowTable, Alimentation, EspecesRes, ChangementEau, Notifications
@@ -203,8 +203,9 @@ api.add_resource(Stats, '/api/stats')
 api.add_resource(VenteCrevette, '/api/ventes/crevettes')
 api.add_resource(VenteAliments, '/api/ventes/aliments')
 api.add_resource(Clients, '/api/clients', '/api/clients/<client>')
-api.add_resource(Stocks, '/api/stocks/<dateLimit>', '/api/stocks')
+api.add_resource(Stocks, '/api/stocks/<filtre>/<dateDebut>', '/api/stocks')
 api.add_resource(ChangementEau, '/api/changementEau')
+api.add_resource(Entre, '/api/entre')
 api.add_resource(Notifications, '/api/notifications')
 api.add_resource(Aliment, '/api/aliments')
 api.add_resource(VentePoissons, '/api/ventes/poissons/<espece>',
