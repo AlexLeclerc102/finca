@@ -8,6 +8,7 @@ from numpy.core.numeric import Infinity
 from datetime import datetime, timedelta
 from numpy import mean
 from numpy.lib.function_base import average
+from pendulum import date
 from utils import changeDate, changeDateBack
 
 from models import Especes
@@ -87,15 +88,20 @@ def getCyclesList(c, bassin):
 
 
 def getTotalPeches(c, lot_id):
-    c.execute(f"SELECT poids, quantite FROM Peches WHERE lot_id = {lot_id}")
+    c.execute(
+        f"SELECT poids, quantite, date FROM Peches WHERE lot_id = {lot_id}")
     peches = c.fetchall()
     total_poids = 0
     total_quantite = 0
+    lastDate = ""
     for peche in peches:
         if peche[0] != None:
             total_poids += peche[0]
             total_quantite += peche[1]
-    return round(total_poids), round(total_quantite)
+            date = datetime.strptime(peche[2], "%Y-%m-%d")
+            if lastDate == "" or lastDate < date:
+                lastDate = date
+    return round(total_poids), round(total_quantite), lastDate
 
 
 def getTotalSemis(c, lot_id):
@@ -133,7 +139,6 @@ def getTotalActuelStat(c, lot_id, quantSem, quantPech, quantAct, mortAct):
         poids = (quantSem - ((quantSem - quantPech - quantAct)
                              * mort) / mortAct - quantPech) / cant
     else:
-        print(lot_id)
         poids = 0
     return poids, mort
 
@@ -292,13 +297,21 @@ class Cycles(Resource):
             cycle['Peso actual'] = 0
             cycle['Alimentacion téo'] = 0
             cycle['Peso actual Stat'] = 0
+            cycle['Fecha ultima pesca'] = ""
             mort = []
             mortStat = []
             weights = []
             gotStat = False
             for j, lot in enumerate(lots):
-                totPech, quantPech = getTotalPeches(c, lot[0])
+                totPech, quantPech, dateDernierePeche = getTotalPeches(
+                    c, lot[0])
                 cycle['Peso pescado'] += totPech
+                if cycle['Fecha ultima pesca'] == "":
+                    cycle['Fecha ultima pesca'] = dateDernierePeche
+                elif type(dateDernierePeche) == str:
+                    pass
+                elif cycle['Fecha ultima pesca'] < dateDernierePeche:
+                    cycle['Fecha ultima pesca'] = dateDernierePeche
                 totSem, quantSem = getTotalSemis(c, lot[0])
                 cycle['Peso sembrado'] += totSem
                 temp = getTotalActuel(c, lot[0], lot[1])
@@ -317,6 +330,9 @@ class Cycles(Resource):
                     mortStat.append(temp[1])
                 else:
                     mortStat.append(mort[-1])
+            if cycle['Fecha ultima pesca'] != "":
+                cycle['Fecha ultima pesca'] = cycle['Fecha ultima pesca'].strftime(
+                    "%d/%m/%Y")
             aliTotal = getAliTotal(c, cycle['Estanque'], cycle['Fecha lleno'])
             cycle['Alimentacion total'] = aliTotal
             if not gotStat:
@@ -543,7 +559,7 @@ class LotData(Resource):
             f"SELECT Especes.libelle, Especes.id, Lots.poids_aliment_a_donner FROM Especes, Lots WHERE Lots.espece_id = Especes.id AND Lots.id = '{lot_id}'")
         espece = c.fetchone()
         total = dict()
-        total["totalPeches"] = getTotalPeches(c, lot_id)
+        total["totalPeches"] = getTotalPeches(c, lot_id)[:2]
         total["totalSemis"] = getTotalSemis(c, lot_id)
         total["totalActuel"] = getTotalActuel(c, lot_id, espece[1])
         if len(statistiques) > 0 and len(statistiques[-1]['mortalidad']) > 0:
@@ -597,22 +613,41 @@ class LotData(Resource):
 
 class Semis(Resource):
     @ flask_praetorian.auth_required
-    def post(self):
+    def post(self, lot_id=""):
         data = request.json
-        poids = float(data["poids"])
         conn = sqlite3.connect(dbPath)
         c = conn.cursor()
-        if len(data['date'].split("-")) != 3:
-            return {"message": "Problème de date"}, 400
-        if "commentaire" in data:
-            c.execute(
-                f"INSERT INTO Semis (lot_id, date, quantite, poids, commentaire) VALUES ({data['lot']}, '{data['date']}', {round(data['quantite'],2)}, {round(poids,6)}, '{data['commentaire']}')")
+        if lot_id == "":
+            poids = float(data["poids"])
+            if len(data['date'].split("-")) != 3:
+                return {"message": "Problème de date"}, 400
+            if "commentaire" in data:
+                c.execute(
+                    f"INSERT INTO Semis (lot_id, date, quantite, poids, commentaire) VALUES ({data['lot']}, '{data['date']}', {round(data['quantite'],2)}, {round(poids,6)}, '{data['commentaire']}')")
+            else:
+                c.execute(
+                    f"INSERT INTO Semis (lot_id, date, quantite, poids) VALUES ({data['lot']}, '{data['date']}', {round(data['quantite'],2)}, {round(poids,6)})")
+            conn.commit()
+            conn.close()
+            return {"message": "Semis bien ajouté"}, 200
         else:
             c.execute(
-                f"INSERT INTO Semis (lot_id, date, quantite, poids) VALUES ({data['lot']}, '{data['date']}', {round(data['quantite'],2)}, {round(poids,6)})")
-        conn.commit()
-        conn.close()
-        return {"message": "Semis bien ajouté"}, 200
+                f"SELECT Especes.type FROM Lots, Semis, Especes WHERE Lots.id = Semis.lot_id AND Especes.id=Lots.espece_id AND Semis.id = {data['id']}")
+            typ = c.fetchone()[0]
+            changes = ''
+            changes += f"date = '{changeDateBack(data['fecha'])}',"
+            changes += f"commentaire = '{data['comentario']}',"
+            changes += f"poids = {data['peso']},"
+            if typ in ['colossoma', 'carpe', 'tilapia']:
+                changes += f"quantite = {data['cantidad']},"
+            else:
+                changes += f"quantite = {float(data['peso']) *float(data['cant/lb'])},"
+            changes = changes.strip(',')
+            command = f"UPDATE Semis SET {changes} WHERE id = {data['id']}"
+            c.execute(command)
+            conn.commit()
+            conn.close()
+            return {"message": "Semis bien modifié"}, 200
 
 
 class Stats(Resource):
@@ -635,11 +670,11 @@ class Stats(Resource):
 class Peches(Resource):
     @ flask_praetorian.auth_required
     def post(self, lot_id=""):
+        data = request.json
+        conn = sqlite3.connect(dbPath)
+        c = conn.cursor()
         if lot_id == "":
-            data = request.json
             poids = float(data["poids"])
-            conn = sqlite3.connect(dbPath)
-            c = conn.cursor()
             if "commentaire" in data:
                 c.execute(
                     f"INSERT INTO Peches (lot_id, date, quantite, poids, commentaire, destination) VALUES ({data['lot']}, '{data['date']}', {round(float(data['quantite']),2)}, {round(float(poids),6)}, '{data['commentaire']}','{data['destination']}')")
@@ -650,9 +685,6 @@ class Peches(Resource):
             conn.close()
             return {"message": "Peches bien ajouté"}, 200
         else:
-            data = request.json
-            conn = sqlite3.connect(dbPath)
-            c = conn.cursor()
             id = data['id']
             c.execute(
                 f"SELECT Especes.type FROM Lots, Peches, Especes WHERE Lots.id = Peches.lot_id AND Especes.id=Lots.espece_id AND Peches.id = {id}")
