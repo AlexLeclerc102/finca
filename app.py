@@ -12,7 +12,7 @@ from cycles import AncienLots, Cycles, LotData, Peches, Semis, Stats, Lots, Anci
 from stocks import Stocks, VenteAliments, Clients, Entre
 from user import UserList
 from utils import changeDate, changeDateBack
-from simple import Aliment, AlimentationTotal, Pompes, Bassins, ShowTable, Alimentation, EspecesRes, ChangementEau, Notifications
+from simple import Aliment, AlimentationTotal, Pompes, Bassins, ShowTable, AddInTable, Alimentation, EspecesRes, ChangementEau, Notifications
 from ventes import EspecesVente, VenteCrevette, VentePoissons, VentePoissonsJour
 from analyseEau import AnalyseEau, AnalyseEauGraph, AnalyseOx
 from emailUser import sendErrorMail
@@ -182,6 +182,7 @@ api.add_resource(Refresh, '/api/refresh')
 api.add_resource(User, '/api/user')
 api.add_resource(UserList, '/api/user/list')
 api.add_resource(ShowTable, '/api/table/<table>')
+api.add_resource(AddInTable, '/api/addInTable/<table>')
 api.add_resource(Cycles, '/api/cycles', '/api/cycles/<bassin>')
 api.add_resource(
     AncienCycle, '/api/ancienCycle/<bassin>/<dateDebut>/<dateFin>')

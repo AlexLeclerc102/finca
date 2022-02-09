@@ -92,7 +92,7 @@ class ShowTable(Resource):
             c.execute(
                 f"SELECT * FROM {table} ")
         names = list(map(lambda x: x[0], c.description))
-        select = c.fetchmany(200)
+        select = c.fetchmany(500)
         ch = -1
         for i, item in enumerate(select):
             d = dict()
@@ -165,12 +165,57 @@ class ShowTable(Resource):
             return {"message": "yes"}, 201
 
 
+class AddInTable(Resource):
+    @flask_praetorian.auth_required
+    def post(self, table):
+        data = request.json
+        conn = sqlite3.connect(dbPath)
+        c = conn.cursor()
+        if table == "Bassins":
+            print("oui")
+            c.execute(
+                f"INSERT INTO Bassins (libelle, surface, profondeur) VALUES ('{data['libelle']}',{data['surface']}, {data['profondeur']} )")
+            conn.commit()
+            conn.close()
+            return {"message": "Bassin bien ajouté"}, 201
+        elif table == "Especes":
+            c.execute(
+                f"INSERT INTO Especes (libelle, type, espece) VALUES ('{data['libelle']}', '{data['type']}', '{data['espece']}') ")
+            conn.commit()
+            conn.close()
+            return {"message": "Espece bien ajouté"}, 201
+        elif table == "Pompes":
+            c.execute(
+                f"INSERT INTO Pompes (libelle, debit) VALUES ('{data['libelle']}', {data['debit']}) ")
+            conn.commit()
+            conn.close()
+            return {"message": "Pompe bien ajouté"}, 201
+        elif table == "Mortalite":
+            c.execute(
+                f"INSERT INTO Mortalite (espece_id, taux_initial,taux_hebdomadaire) VALUES ('{data['espece_id']}', {data['taux_initial']}, {data['taux_hebdomadaire']}) ")
+            conn.commit()
+            conn.close()
+            return {"message": "Mortalite bien ajouté"}, 201
+        elif table == "TypeAliment":
+            c.execute(
+                f"INSERT INTO TypeAliment (libelle) VALUES ('{data['libelle']}') ")
+            conn.commit()
+            conn.close()
+            return {"message": "Type aliment bien ajouté"}, 201
+        elif table == "Croissance":
+            c.execute(
+                f"INSERT INTO Croissance (espece_id, semaine, nombre_par_livre, pourcentage_aliment) VALUES ('{data['espece_id']}', {data['semaine']}, {data['nombre_par_livre']}, {data['pourcentage_aliment']}) ")
+            conn.commit()
+            conn.close()
+            return {"message": "Croissance bien ajouté"}, 201
+
+
 class Bassins(Resource):
     @flask_praetorian.auth_required
     def get(self, bassin=None):
         conn = sqlite3.connect(dbPath)
         c = conn.cursor()
-        c.execute("SELECT libelle FROM Bassins")
+        c.execute("SELECT libelle, id FROM Bassins")
         fetch = c.fetchall()
         bassins = [i[0] for i in fetch]
         conn.close()
