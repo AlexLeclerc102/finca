@@ -311,7 +311,6 @@ class Alimentation(Resource):
     @flask_praetorian.auth_required
     def post(self):
         data = request.json
-        print(data["change"])
         bassin = data["bassin"]
         if data['poids'] != '':
             poids = int(data["poids"])
@@ -331,7 +330,7 @@ class Alimentation(Resource):
             c.execute(
                 f"UPDATE Cycles SET type_aliment_id = {aliment} WHERE id = {cycle[0]}")
         c.execute(
-            f"SELECT AlimentationJournalieres.id, Bassins.id, AlimentationJournalieres.poids, AlimentationJournalieres.date FROM AlimentationJournalieres, Bassins WHERE Bassins.id=AlimentationJournalieres.Bassin_id AND AlimentationJournalieres.date>='{date}' AND Bassins.libelle='{bassin}'")
+            f"SELECT AlimentationJournalieres.id, Bassins.id, AlimentationJournalieres.poids, AlimentationJournalieres.date FROM AlimentationJournalieres, Bassins WHERE Bassins.id=AlimentationJournalieres.Bassin_id AND AlimentationJournalieres.date>='{date}' AND Bassins.libelle='{bassin}' ORDER BY AlimentationJournalieres.date ASC")
         fetch = c.fetchall()
         c.execute(
             f"SELECT stock, date, id, alimentation FROM Stock WHERE type_aliment_id = {aliment} AND date <= '{date}' ORDER BY date DESC LIMIT 1")
@@ -342,6 +341,7 @@ class Alimentation(Resource):
                 f'UPDATE AlimentationJournalieres SET poids = {poids}, poids_pm = {poids_pm}, type_aliment_id= {aliment}, maj = 1 WHERE id = {id}')
             if data['change']:
                 for ali in fetch[1::]:
+                    print(aliment, ali[0])
                     c.execute(
                         f'UPDATE AlimentationJournalieres SET type_aliment_id= {aliment} WHERE id = {ali[0]}')
             changementStock(c, aliment, date, poids -
