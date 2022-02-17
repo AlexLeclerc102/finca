@@ -173,11 +173,15 @@ class EspecesVente(Resource):
 
 class VentesParJour(Resource):
     @flask_praetorian.auth_required
-    def get(self, date):
+    def get(self, date, filtre):
         conn = sqlite3.connect(dbPath)
         c = conn.cursor()
-        c.execute(
-            f"SELECT Clients.libelle, VentesAliments.quantite, TypeAliment.libelle FROM VentesAliments, Clients, TypeAliment WHERE TypeAliment.id=VentesAliments.type_aliment_id AND VentesAliments.client = Clients.id AND VentesAliments.date='{date}'")
+        if filtre == "undefined":
+            c.execute(
+                f"SELECT Clients.libelle, VentesAliments.quantite, TypeAliment.libelle FROM VentesAliments, Clients, TypeAliment WHERE TypeAliment.id=VentesAliments.type_aliment_id AND VentesAliments.client = Clients.id AND VentesAliments.date='{date}'")
+        else:
+            c.execute(
+                f"SELECT Clients.libelle, VentesAliments.quantite, TypeAliment.libelle FROM VentesAliments, Clients, TypeAliment WHERE TypeAliment.id=VentesAliments.type_aliment_id AND VentesAliments.client = Clients.id AND VentesAliments.date='{date}' AND VentesAliments.type_aliment_id ={filtre}")
         ventes = c.fetchall()
         conn.close()
         return {"ventes": ventes}, 200

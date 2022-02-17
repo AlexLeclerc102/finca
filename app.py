@@ -209,7 +209,7 @@ api.add_resource(ChangementEau, '/api/changementEau')
 api.add_resource(Entre, '/api/entre')
 api.add_resource(Notifications, '/api/notifications')
 api.add_resource(Aliment, '/api/aliments')
-api.add_resource(VentesParJour, '/api/ventesParJour/<date>')
+api.add_resource(VentesParJour, '/api/ventesParJour/<date>/<filtre>')
 api.add_resource(VentePoissons, '/api/ventes/poissons/<espece>',
                  '/api/ventes/poissons')
 api.add_resource(VentePoissonsJour, '/api/ventes/poissonsJour/<espece>/<date>')
