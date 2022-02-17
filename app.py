@@ -13,7 +13,7 @@ from stocks import Stocks, VenteAliments, Clients, Entre
 from user import UserList
 from utils import changeDate, changeDateBack
 from simple import Aliment, AlimentationTotal, Pompes, Bassins, ShowTable, AddInTable, Alimentation, EspecesRes, ChangementEau, Notifications
-from ventes import EspecesVente, VenteCrevette, VentePoissons, VentePoissonsJour
+from ventes import EspecesVente, VenteCrevette, VentePoissons, VentePoissonsJour, VentesParJour
 from analyseEau import AnalyseEau, AnalyseEauGraph, AnalyseOx
 from emailUser import sendErrorMail
 
@@ -209,6 +209,7 @@ api.add_resource(ChangementEau, '/api/changementEau')
 api.add_resource(Entre, '/api/entre')
 api.add_resource(Notifications, '/api/notifications')
 api.add_resource(Aliment, '/api/aliments')
+api.add_resource(VentesParJour, '/api/ventesParJour/<date>')
 api.add_resource(VentePoissons, '/api/ventes/poissons/<espece>',
                  '/api/ventes/poissons')
 api.add_resource(VentePoissonsJour, '/api/ventes/poissonsJour/<espece>/<date>')

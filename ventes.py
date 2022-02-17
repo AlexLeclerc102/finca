@@ -169,3 +169,15 @@ class EspecesVente(Resource):
         especes = c.fetchall()
         conn.close()
         return {"especes": especes}, 200
+
+
+class VentesParJour(Resource):
+    @flask_praetorian.auth_required
+    def get(self, date):
+        conn = sqlite3.connect(dbPath)
+        c = conn.cursor()
+        c.execute(
+            f"SELECT Clients.libelle, VentesAliments.quantite, TypeAliment.libelle FROM VentesAliments, Clients, TypeAliment WHERE TypeAliment.id=VentesAliments.type_aliment_id AND VentesAliments.client = Clients.id AND VentesAliments.date='{date}'")
+        ventes = c.fetchall()
+        conn.close()
+        return {"ventes": ventes}, 200
