@@ -319,6 +319,7 @@ class Alimentation(Resource):
     @flask_praetorian.auth_required
     def post(self):
         data = request.json
+        print(data)
         bassin = data["bassin"]
         if data['poids'] != '':
             poids = int(data["poids"])
@@ -332,8 +333,12 @@ class Alimentation(Resource):
         conn = sqlite3.connect(dbPath)
         c = conn.cursor()
         c.execute(
-            f"SELECT Cycles.id, Cycles.type_aliment_id FROM Cycles, Bassins WHERE Cycles.bassin_id = Bassins.id AND Cycles.date_vide = '' AND Bassins.libelle = '{bassin}' ORDER BY Cycles.date_rempli DESC")
+            f"SELECT Cycles.id, Cycles.type_aliment_id FROM Cycles, Bassins WHERE Cycles.bassin_id = Bassins.id AND Cycles.date_vide = ''  AND Bassins.libelle = '{bassin}' ORDER BY Cycles.date_rempli DESC")
         cycle = c.fetchone()
+        if cycle == None:
+            c.execute(
+                f"SELECT Cycles.id, Cycles.type_aliment_id FROM Cycles, Bassins WHERE Cycles.bassin_id = Bassins.id AND Cycles.date_vide >= '{date}' AND Cycles.date_rempli<='{date}' AND Bassins.libelle = '{bassin}' ORDER BY Cycles.date_rempli DESC")
+            cycle = c.fetchone()
         if cycle[1] != aliment:
             c.execute(
                 f"UPDATE Cycles SET type_aliment_id = {aliment} WHERE id = {cycle[0]}")
