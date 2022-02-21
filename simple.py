@@ -3,6 +3,8 @@ import flask_praetorian
 import sqlite3
 from flask import request
 from datetime import datetime
+
+from numpy import diff
 from cycles import getLots
 from utils import changeDate, changeDateBack, changeDateBack2
 
@@ -247,7 +249,6 @@ class AlimentationTotal(Resource):
     def get(self, date=datetime.now().strftime("%Y-%m-%d")):
         conn = sqlite3.connect(dbPath)
         c = conn.cursor()
-        print(date)
         c.execute(
             f"SELECT TypeAliment.libelle, sum(AlimentationJournalieres.poids) FROM AlimentationJournalieres, TypeAliment WHERE AlimentationJournalieres.type_aliment_id=TypeAliment.id AND AlimentationJournalieres.date='{date}' GROUP BY TypeAliment.libelle")
         total = c.fetchall()
@@ -256,18 +257,26 @@ class AlimentationTotal(Resource):
 
 class Alimentation(Resource):
     @flask_praetorian.auth_required
-    def get(self, date=datetime.now().strftime("%Y-%m-%d")):
+    def get(self, date=datetime.now().strftime("%Y-%m-%d"), closed='false'):
         conn = sqlite3.connect(dbPath)
         c = conn.cursor()
-        c.execute(
-            "SELECT id, bassin_id, date_rempli, date_vide, surface, type_aliment_id FROM Cycles WHERE date_vide = ''")
-        names = list(map(lambda x: x[0].replace('_', ' '), c.description))
-        select = c.fetchall()
+        if closed == "true":
+            c.execute(
+                f"SELECT id, bassin_id, date_rempli, date_vide, surface, type_aliment_id FROM Cycles WHERE  date_rempli<='{date}' AND date_vide>='{date}'")
+            names = list(
+                map(lambda x: x[0].replace('_', ' '), c.description))
+            select = c.fetchall()
+        else:
+            c.execute(
+                "SELECT id, bassin_id, date_rempli, date_vide, surface, type_aliment_id FROM Cycles WHERE date_vide=''")
+            names = list(map(lambda x: x[0].replace('_', ' '), c.description))
+            select = c.fetchall()
         c.execute("SELECT id, libelle FROM TypeAliment")
         aliments = c.fetchall()
         for i, cycle in enumerate(select):
             id_bassin = cycle[1]
-            c.execute(f"SELECT libelle FROM Bassins WHERE id = {id_bassin}")
+            c.execute(
+                f"SELECT libelle FROM Bassins WHERE id = {id_bassin}")
             bassin = c.fetchall()[0][0]
             d = dict()
             lots = getLots(c, cycle[0])
@@ -301,7 +310,6 @@ class Alimentation(Resource):
         data = request.json
         conn = sqlite3.connect(dbPath)
         c = conn.cursor()
-        print(data)
         c.execute(
             f"UPDATE Lots SET poids_aliment_a_donner = {data['poids']} WHERE id ={data['id']}")
         conn.commit()
@@ -341,7 +349,6 @@ class Alimentation(Resource):
                 f'UPDATE AlimentationJournalieres SET poids = {poids}, poids_pm = {poids_pm}, type_aliment_id= {aliment}, maj = 1 WHERE id = {id}')
             if data['change']:
                 for ali in fetch[1::]:
-                    print(aliment, ali[0])
                     c.execute(
                         f'UPDATE AlimentationJournalieres SET type_aliment_id= {aliment} WHERE id = {ali[0]}')
             changementStock(c, aliment, date, poids -
@@ -376,6 +383,42 @@ class EspecesRes(Resource):
         bassins = c.fetchall()
         conn.close()
         return {"bassins": bassins, "especes": especes}, 200
+
+
+class ResetStockAlimentation(Resource):
+    @flask_praetorian.auth_required
+    def get(self, date):
+        conn = sqlite3.connect(dbPath)
+        c = conn.cursor()
+        c.execute(
+            f"SELECT type_aliment_id, date FROM Stock WHERE  date>='{date}'")
+        totals = c.fetchall()
+        for t in totals:
+            c.execute(
+                f"SELECT sum(AlimentationJournalieres.poids) FROM AlimentationJournalieres, TypeAliment WHERE AlimentationJournalieres.type_aliment_id=TypeAliment.id AND AlimentationJournalieres.date='{t[1]}' AND TypeAliment.id={t[0]}")
+            somme = c.fetchone()[0]
+            if somme == None:
+                somme = 0
+            c.execute(
+                f"SELECT id, alimentation, ajustement, stock FROM Stock WHERE date<='{t[1]}' AND type_aliment_id={t[0]} ORDER BY date DESC LIMIT 2")
+            fetch = c.fetchall()
+            if len(fetch) == 2:
+                [stock, ancienStock] = fetch
+                ancienStock = ancienStock[3]
+            else:
+                [stock] = fetch
+                ancienStock = 0
+            if stock[2] != 0:
+                diffAjustement = stock[3] - ancienStock + somme
+                s = stock[3]
+            else:
+                diffAjustement = 0
+                s = ancienStock - somme
+            command = f"UPDATE Stock SET alimentation = {somme}, stock = {s}, ajustement = {diffAjustement} WHERE id={stock[0]}"
+            c.execute(command)
+        conn.commit()
+        conn.close()
+        return {"message": "Reussi"}, 200
 
 
 class Notifications(Resource):

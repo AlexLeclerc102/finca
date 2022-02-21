@@ -418,6 +418,8 @@ class AncienCycle(Resource):
     def get(self, bassin, dateDebut, dateFin):
         conn = sqlite3.connect(dbPath)
         c = conn.cursor()
+        if dateFin == "--":
+            dateFin = datetime.now().strftime("%Y-%m-%d")
         cycles = getAncienCycle(c, bassin, dateDebut, dateFin)
         for i, cycle in enumerate(cycles):
             lots = getLots(c, cycle['id'])
