@@ -343,7 +343,7 @@ class Alimentation(Resource):
             c.execute(
                 f"UPDATE Cycles SET type_aliment_id = {aliment} WHERE id = {cycle[0]}")
         c.execute(
-            f"SELECT AlimentationJournalieres.id, Bassins.id, AlimentationJournalieres.poids, AlimentationJournalieres.date FROM AlimentationJournalieres, Bassins WHERE Bassins.id=AlimentationJournalieres.Bassin_id AND AlimentationJournalieres.date>='{date}' AND Bassins.libelle='{bassin}' ORDER BY AlimentationJournalieres.date ASC")
+            f"SELECT AlimentationJournalieres.id, Bassins.id, AlimentationJournalieres.poids, AlimentationJournalieres.date, AlimentationJournalieres.type_aliment_id FROM AlimentationJournalieres, Bassins WHERE Bassins.id=AlimentationJournalieres.Bassin_id AND AlimentationJournalieres.date>='{date}' AND Bassins.libelle='{bassin}' ORDER BY AlimentationJournalieres.date ASC")
         fetch = c.fetchall()
         c.execute(
             f"SELECT stock, date, id, alimentation FROM Stock WHERE type_aliment_id = {aliment} AND date <= '{date}' ORDER BY date DESC LIMIT 1")
@@ -356,8 +356,16 @@ class Alimentation(Resource):
                 for ali in fetch[1::]:
                     c.execute(
                         f'UPDATE AlimentationJournalieres SET type_aliment_id= {aliment} WHERE id = {ali[0]}')
-            changementStock(c, aliment, date, poids -
-                            fetch[0][2])
+                    if ali[4] != aliment:
+                        changementStock(c, aliment, ali[3], ali[2])
+                        changementStock(c, ali[4], ali[3], -ali[2])
+            if fetch[0][4] != aliment:
+                changementStock(c, aliment, date, poids)
+                changementStock(c, fetch[0][4], date, -poids)
+            else:
+                changementStock(c, aliment, date, poids -
+                                fetch[0][2])
+
             conn.commit()
             conn.close()
             return {"message": "Alimentation maj"}, 200
@@ -371,7 +379,15 @@ class Alimentation(Resource):
                 for ali in fetch[1::]:
                     c.execute(
                         f'UPDATE AlimentationJournalieres SET type_aliment_id= {aliment} WHERE id = {ali[0]}')
-            changementStock(c, aliment, date, poids)
+                    if ali[4] != aliment:
+                        changementStock(c, aliment, ali[3], ali[2])
+                        changementStock(c, ali[4], ali[3], -ali[2])
+            if fetch[0][4] != aliment:
+                changementStock(c, aliment, date, poids)
+                changementStock(c, fetch[0][4], date, -poids)
+            else:
+                changementStock(c, aliment, date, poids -
+                                fetch[0][2])
             conn.commit()
             conn.close()
             return {"message": "Alimentation crée"}, 200

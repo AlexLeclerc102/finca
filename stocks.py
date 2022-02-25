@@ -215,6 +215,8 @@ class Stocks(Resource):
                                       "Commentaire"]):
                 if name == "Date":
                     b[traduction[name]] = changeDate(stocks[i][j])
+                if name in ["Stock", "Ajustement", "Alimentation", "Entrée", "Ventes"]:
+                    b[traduction[name]] = round(stocks[i][j], 1)
                 else:
                     b[traduction[name]] = stocks[i][j]
             stocks[i] = b
