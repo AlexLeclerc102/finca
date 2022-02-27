@@ -206,7 +206,6 @@ def getTotalActuel(c, lot_id, espece_id):
                 if semi['poids'] != 0 and semi['quantite'] != 0:
                     moyNbrLivre = (moyNbrLivre * total_poisson + ((
                         semi['quantite'] / semi['poids']) * semi['quantite'])) / (total_poisson + semi['quantite'])
-
                 total_poisson += semi['quantite'] * (1-taux_initial)
                 total_semi += semi['quantite']
 
@@ -237,12 +236,10 @@ def getTotalActuel(c, lot_id, espece_id):
         total_poisson = 0
     if poids_total < 0:
         poids_total = 0
-
     if total_semi > 0:
         mortalite = (total_semi - total_poisson + total_peche) / total_semi
     else:
         mortalite = 0
-
     return round(total_poisson), round(poids_total), round((datetime.now() - date_max).days / 30.41, 2), mortalite, round(poids_aliment_th, 1), pourcAli
 
 
@@ -572,7 +569,7 @@ class LotData(Resource):
                 cant, croissance)
             if sem < len(croissance):
                 total["alimentationstatpourc"] = croissance[sem][2]
-                if cant != 0:
+                if cant != 0 and total["totalActuel"][3] != 0:
                     poids = (total["totalSemis"][1] -
                              ((total["totalSemis"][1] -
                                total["totalPeches"][1] -
