@@ -252,6 +252,7 @@ class AlimentationTotal(Resource):
         c.execute(
             f"SELECT TypeAliment.libelle, sum(AlimentationJournalieres.poids) FROM AlimentationJournalieres, TypeAliment WHERE AlimentationJournalieres.type_aliment_id=TypeAliment.id AND AlimentationJournalieres.date='{date}' GROUP BY TypeAliment.libelle")
         total = c.fetchall()
+        conn.close()
         return {"date": date, "total": total}, 200
 
 
@@ -303,6 +304,7 @@ class Alimentation(Resource):
             elif cycle[5] != None:
                 d["Type_Aliment"] = cycle[5]
             select[i] = d
+        conn.close()
         return {"cycles": select, "aliments": aliments, "date": date}, 200
 
     @flask_praetorian.auth_required
@@ -371,8 +373,7 @@ class Alimentation(Resource):
             return {"message": "Alimentation maj"}, 200
         else:
             c.execute(f'SELECT id FROM Bassins WHERE libelle="{bassin}"')
-            fetch = c.fetchall()
-            bassin_id = fetch[0][0]
+            bassin_id = c.fetchall()[0][0]
             c.execute(
                 f"INSERT INTO AlimentationJournalieres (bassin_id, type_aliment_id, user_id, date, poids, poids_pm, maj) VALUES ({bassin_id}, {aliment}, 0,'{date}', {poids}, {poids_pm}, 1)")
             if data['change']:
