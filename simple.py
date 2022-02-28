@@ -372,23 +372,25 @@ class Alimentation(Resource):
             conn.close()
             return {"message": "Alimentation maj"}, 200
         else:
+            print(fetch)
             c.execute(f'SELECT id FROM Bassins WHERE libelle="{bassin}"')
             bassin_id = c.fetchall()[0][0]
             c.execute(
                 f"INSERT INTO AlimentationJournalieres (bassin_id, type_aliment_id, user_id, date, poids, poids_pm, maj) VALUES ({bassin_id}, {aliment}, 0,'{date}', {poids}, {poids_pm}, 1)")
-            if data['change']:
-                for ali in fetch[1::]:
-                    c.execute(
-                        f'UPDATE AlimentationJournalieres SET type_aliment_id= {aliment} WHERE id = {ali[0]}')
-                    if ali[4] != aliment:
-                        changementStock(c, aliment, ali[3], ali[2])
-                        changementStock(c, ali[4], ali[3], -ali[2])
-            if fetch[0][4] != aliment:
-                changementStock(c, aliment, date, poids)
-                changementStock(c, fetch[0][4], date, -poids)
-            else:
-                changementStock(c, aliment, date, poids -
-                                fetch[0][2])
+            if len(fetch) > 0:
+                if data['change']:
+                    for ali in fetch[1::]:
+                        c.execute(
+                            f'UPDATE AlimentationJournalieres SET type_aliment_id= {aliment} WHERE id = {ali[0]}')
+                        if ali[4] != aliment:
+                            changementStock(c, aliment, ali[3], ali[2])
+                            changementStock(c, ali[4], ali[3], -ali[2])
+                if fetch[0][4] != aliment:
+                    changementStock(c, aliment, date, poids)
+                    changementStock(c, fetch[0][4], date, -poids)
+                else:
+                    changementStock(c, aliment, date, poids -
+                                    fetch[0][2])
             conn.commit()
             conn.close()
             return {"message": "Alimentation crée"}, 200
