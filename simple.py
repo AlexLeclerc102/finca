@@ -224,21 +224,23 @@ class Bassins(Resource):
         return {"bassins": bassins}, 200
 
 
-def changementStock(c, id_aliment, date, alimentation, commentaire="."):
+def changementStock(c, id_aliment, date, alimentation, commentaire=""):
     c.execute(
         f"SELECT * FROM Stock WHERE type_aliment_id={id_aliment} AND date>'{date}' ORDER BY date ASC")
     stocks = c.fetchall()
+    print("s", stocks)
     c.execute(
         f"SELECT * FROM Stock WHERE type_aliment_id={id_aliment} AND date <='{date}' ORDER BY date DESC LIMIT 1")
     last = c.fetchone()
+    print(last, date)
     stock = last[3] - int(alimentation)
-
+    print(stock)
     if last[2] != date:
         c.execute(
             f"INSERT INTO Stock (type_aliment_id, date, stock, alimentation, commentaire, vente, ajustement, entre) VALUES ({id_aliment}, '{date}', {stock}, {alimentation}, '{commentaire}', 0, 0, 0)")
     else:
         c.execute(
-            f"UPDATE Stock SET stock = {stock}, alimentation = {last[5] + alimentation}, commentaire = '{commentaire}' WHERE id={last[0]}")
+            f"UPDATE Stock SET stock = {stock}, alimentation = {last[5] + alimentation}, commentaire = '{last[8] + commentaire}' WHERE id={last[0]}")
     for s in stocks:
         c.execute(
             f"UPDATE Stock SET stock = {s[3] - int(alimentation)} WHERE id={s[0]}")
@@ -321,7 +323,7 @@ class Alimentation(Resource):
     @flask_praetorian.auth_required
     def post(self):
         data = request.json
-        print(data)
+        print("data", data)
         bassin = data["bassin"]
         if data['poids'] != '':
             poids = int(data["poids"])
@@ -365,6 +367,7 @@ class Alimentation(Resource):
                 changementStock(c, aliment, date, poids)
                 changementStock(c, fetch[0][4], date, -poids)
             else:
+                print("here")
                 changementStock(c, aliment, date, poids -
                                 fetch[0][2])
 
@@ -391,6 +394,8 @@ class Alimentation(Resource):
                 else:
                     changementStock(c, aliment, date, poids -
                                     fetch[0][2])
+            else:
+                changementStock(c, aliment, date, poids)
             conn.commit()
             conn.close()
             return {"message": "Alimentation crée"}, 200
@@ -424,7 +429,7 @@ class ResetStockAlimentation(Resource):
             if somme == None:
                 somme = 0
             c.execute(
-                f"SELECT id, alimentation, ajustement, stock FROM Stock WHERE date<='{t[1]}' AND type_aliment_id={t[0]} ORDER BY date DESC LIMIT 2")
+                f"SELECT id, alimentation, ajustement, stock, vente, entre FROM Stock WHERE date<='{t[1]}' AND type_aliment_id={t[0]} ORDER BY date DESC LIMIT 2")
             fetch = c.fetchall()
             if len(fetch) == 2:
                 [stock, ancienStock] = fetch
@@ -437,7 +442,7 @@ class ResetStockAlimentation(Resource):
                 s = stock[3]
             else:
                 diffAjustement = 0
-                s = ancienStock - somme
+                s = ancienStock - somme - stock[4] + stock[5]
             command = f"UPDATE Stock SET alimentation = {somme}, stock = {s}, ajustement = {diffAjustement} WHERE id={stock[0]}"
             c.execute(command)
         conn.commit()

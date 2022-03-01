@@ -8,7 +8,7 @@ import time
 dbPath = "database.db"
 
 
-def changementStockEntre(c, id_aliment, date, entre, commentaire="."):
+def changementStockEntre(c, id_aliment, date, entre, commentaire=""):
     c.execute(
         f"SELECT * FROM Stock WHERE type_aliment_id={id_aliment} AND date>'{date}' ORDER BY date ASC")
     stocks = c.fetchall()
@@ -21,13 +21,13 @@ def changementStockEntre(c, id_aliment, date, entre, commentaire="."):
             f"INSERT INTO Stock (type_aliment_id, date, stock, vente, commentaire, alimentation, ajustement, entre) VALUES ({id_aliment}, '{date}', {stock}, 0, '{commentaire}', 0, 0, {entre})")
     else:
         c.execute(
-            f"UPDATE Stock SET stock = {stock}, entre = {last[7] + float(entre)}, commentaire = '{commentaire}' WHERE id={last[0]}")
+            f"UPDATE Stock SET stock = {stock}, entre = {last[7] + float(entre)}, commentaire = '{last[8]+ commentaire}' WHERE id={last[0]}")
     for s in stocks:
         c.execute(
             f"UPDATE Stock SET stock = {s[3] + float(entre)} WHERE id={s[0]}")
 
 
-def changementStockVente(c, id_aliment, date, vente, commentaire="."):
+def changementStockVente(c, id_aliment, date, vente, commentaire=""):
     c.execute(
         f"SELECT * FROM Stock WHERE type_aliment_id={id_aliment} AND date>'{date}' ORDER BY date ASC")
     stocks = c.fetchall()
@@ -40,13 +40,13 @@ def changementStockVente(c, id_aliment, date, vente, commentaire="."):
             f"INSERT INTO Stock (type_aliment_id, date, stock, vente, commentaire, alimentation, ajustement, entre) VALUES ({id_aliment}, '{date}', {stock}, {vente}, '{commentaire}', 0, 0, 0)")
     else:
         c.execute(
-            f"UPDATE Stock SET stock = {stock}, vente = {last[4] + float(vente)}, commentaire = '{commentaire}' WHERE id={last[0]}")
+            f"UPDATE Stock SET stock = {stock}, vente = {last[4] + float(vente)}, commentaire = '{last[8]  + commentaire}' WHERE id={last[0]}")
     for s in stocks:
         c.execute(
             f"UPDATE Stock SET stock = {s[3] - float(vente)} WHERE id={s[0]}")
 
 
-def changementStockInventaire(c, id_aliment, date, stock, commentaire="."):
+def changementStockInventaire(c, id_aliment, date, stock, commentaire=""):
     c.execute(
         f"SELECT * FROM Stock WHERE type_aliment_id={id_aliment} AND date>'{date}' ORDER BY date ASC")
     stocks = c.fetchall()
@@ -63,7 +63,7 @@ def changementStockInventaire(c, id_aliment, date, stock, commentaire="."):
             f"INSERT INTO Stock (type_aliment_id, date, stock, ajustement, commentaire, alimentation, vente, entre) VALUES ({id_aliment}, '{date}', {stock}, {ajustement}, '{commentaire}', 0, 0, 0)")
     elif last is not None:
         c.execute(
-            f"UPDATE Stock SET stock = {stock}, ajustement = {last[6] + ajustement}, commentaire = '{commentaire}' WHERE id={last[0]}")
+            f"UPDATE Stock SET stock = {stock}, ajustement = {last[6] + ajustement}, commentaire = '{last[8]  + commentaire}' WHERE id={last[0]}")
     else:
         c.execute(
             f"INSERT INTO Stock (type_aliment_id, date, stock, ajustement, commentaire, alimentation, vente, entre) VALUES ({id_aliment}, '{date}', {stock}, {ajustement}, '{commentaire}', 0, 0, {ajustement})")
@@ -115,7 +115,7 @@ class Entre(Resource):
                              date, data['entre'], data['commentaire'])
         conn.commit()
         conn.close()
-        return {"message": "Vente ajoutée"}, 200
+        return {"message": "Compra añanida"}, 200
 
 
 class Clients(Resource):
@@ -192,7 +192,7 @@ class Clients(Resource):
                     f"INSERT INTO Clients (libelle, adresse, cedula) VALUES ('{data['libelle']}', '{data['adresse']}', {data['cedula']})")
             conn.commit()
             conn.close()
-            return {"message": "Cliente aNanido"}, 200
+            return {"message": "Cliente añanido"}, 200
 
 
 class Stocks(Resource):
@@ -200,7 +200,6 @@ class Stocks(Resource):
     def get(self, filtre, dateDebut):
         conn = sqlite3.connect(dbPath)
         c = conn.cursor()
-        print(filtre)
         c.execute(
             f"SELECT id, libelle FROM TypeAliment")
         TypeAl = c.fetchall()
@@ -214,14 +213,33 @@ class Stocks(Resource):
             for j, name in enumerate(["id", "Date", "Stock", "Alimentation", "Entrée", "Ventes", "Ajustement",
                                       "Commentaire"]):
                 if name == "Date":
+                    print(b, traduction[name], changeDate(stocks[i][j]))
                     b[traduction[name]] = changeDate(stocks[i][j])
-                if name in ["Stock", "Ajustement", "Alimentation", "Entrée", "Ventes"]:
+                elif name in ["Stock", "Ajustement", "Alimentation", "Entrée", "Ventes"]:
                     b[traduction[name]] = round(stocks[i][j], 1)
                 else:
                     b[traduction[name]] = stocks[i][j]
             stocks[i] = b
         conn.close()
         return {"stocks": stocks, "alimentList": TypeAl}, 200
+
+    @flask_praetorian.auth_required
+    def put(self):
+        data = request.json
+        conn = sqlite3.connect(dbPath)
+        c = conn.cursor()
+        c.execute(
+            f"SELECT entre, type_aliment_id, date, entre, commentaire FROM Stock WHERE id={data['id']}")
+        s = c.fetchone()
+        if s[0] != data['Compras']:
+            changementStockEntre(c, s[1], s[2],  float(
+                data['Compras'])-s[3],  data['Comentario'])
+        if s[4] != data['Comentario'] or (s[0] != data['Compras'] and s[4] == data['Comentario']):
+            c.execute(
+                f"UPDATE Stock SET commentaire = '{data['Comentario']}' where id={data['id']}")
+        conn.commit()
+        conn.close()
+        return {"message": "Cambio realizado"}, 200
 
     @flask_praetorian.auth_required
     def post(self):
@@ -237,4 +255,4 @@ class Stocks(Resource):
         notif(c, conn, 1, text, "/copeyito/stocks", 1)
         conn.commit()
         conn.close()
-        return {"message": "Ajout effectué"}, 200
+        return {"message": "Inventario realizado"}, 200
