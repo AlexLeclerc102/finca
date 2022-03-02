@@ -98,20 +98,17 @@ class VentePoissons(Resource):
                 f"SELECT Peches.poids FROM Peches, Lots WHERE Lots.id=Peches.lot_id AND Peches.date='{item[2]}' AND Lots.espece_id={espece} AND Peches.destination='V'")
             peches = c.fetchall()
             d = dict()
-            d['total venta'] = 0
             for j, name in enumerate(["id", "espece_id", "fecha", "peso"]):
                 if name == "fecha":
                     d[name] = changeDate(ventes[i][j])
                 else:
-                    if name != "id":
-                        d['total venta'] += ventes[i][j]
                     d[name] = ventes[i][j]
             d['total pesca'] = 0
             for p in peches:
                 d['total pesca'] += p[0]
             if d['total pesca'] != 0:
                 d['% perdida'] = str(round(
-                    (d['total pesca'] - d['total venta']) / d['total pesca'] * 100)) + ' %'
+                    (d['total pesca'] - item[3]) / d['total pesca'] * 100)) + ' %'
             else:
                 d['% perdida'] = "0 pesca"
             d['total pesca'] = round(d['total pesca'], 1)
@@ -147,11 +144,9 @@ class VentePoissonsJour(Resource):
     def get(self, espece, date):
         conn = sqlite3.connect(dbPath)
         c = conn.cursor()
-        print(date, espece)
         c.execute(
             f"SELECT Peches.poids FROM Peches, Lots WHERE Lots.id=Peches.lot_id AND Peches.date='{date}' AND Lots.espece_id={espece} AND Peches.destination='V'")
         peches = c.fetchall()
-        print(peches)
         total = 0
         for p in peches:
             total += p[0]
