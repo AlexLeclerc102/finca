@@ -703,3 +703,17 @@ class Peches(Resource):
             conn.commit()
             conn.close()
             return {"message": "Peches bien modifié"}, 200
+
+
+class CloseCycle(Resource):
+    @ flask_praetorian.auth_required
+    def post(self):
+        data = request.json
+        print(data)
+        conn = sqlite3.connect(dbPath)
+        c = conn.cursor()
+        c.execute(
+            f"UPDATE Cycles SET date_vide = '{changeDateBack(data['dateFin'])}' WHERE id = {data['cycle']}")
+        conn.commit()
+        conn.close()
+        return {"message": "Cyclo cerrado"}, 200

@@ -367,7 +367,6 @@ class Alimentation(Resource):
                 changementStock(c, aliment, date, poids)
                 changementStock(c, fetch[0][4], date, -poids)
             else:
-                print("here")
                 changementStock(c, aliment, date, poids -
                                 fetch[0][2])
 

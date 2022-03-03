@@ -8,7 +8,7 @@ from flask import got_request_exception
 import sqlite3
 from flask_restful import Resource, Api
 from models import db, User
-from cycles import AncienLots, Cycles, LotData, Peches, Semis, Stats, Lots, AncienCycle
+from cycles import AncienLots, Cycles, LotData, Peches, Semis, Stats, Lots, AncienCycle, CloseCycle
 from stocks import Stocks, VenteAliments, Clients, Entre
 from user import UserList
 from utils import changeDate, changeDateBack
@@ -60,7 +60,7 @@ with app.app_context():
         db.session.add(User(
             id=0,
             username='legacy',
-            password=guard.hash_password('123456'),
+            password=guard.hash_password('qsdfqsdf'),
             roles='legacy'
         ))
     if db.session.query(User).filter_by(username='Alex').count() < 1:
@@ -74,6 +74,24 @@ with app.app_context():
             username='Corinne',
             password=guard.hash_password('123456'),
             roles='boss'
+        ))
+    if db.session.query(User).filter_by(username='Assistant').count() < 1:
+        db.session.add(User(
+            username='Assistant',
+            password=guard.hash_password('123456'),
+            roles='assistant'
+        ))
+    if db.session.query(User).filter_by(username='Alimentacion').count() < 1:
+        db.session.add(User(
+            username='Alimentacion',
+            password=guard.hash_password('123456'),
+            roles='alimentation'
+        ))
+    if db.session.query(User).filter_by(username='Analisis').count() < 1:
+        db.session.add(User(
+            username='Analisis',
+            password=guard.hash_password('123456'),
+            roles='analyse'
         ))
     db.session.commit()
 
@@ -184,6 +202,7 @@ api.add_resource(UserList, '/api/user/list')
 api.add_resource(ShowTable, '/api/table/<table>')
 api.add_resource(AddInTable, '/api/addInTable/<table>')
 api.add_resource(Cycles, '/api/cycles', '/api/cycles/<bassin>')
+api.add_resource(CloseCycle, '/api/closeCycle')
 api.add_resource(
     AncienCycle, '/api/ancienCycle/<bassin>/<dateDebut>/<dateFin>')
 api.add_resource(Bassins, '/api/bassins')
