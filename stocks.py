@@ -252,7 +252,7 @@ class Stocks(Resource):
         c.execute(f"SELECT libelle FROM TypeAliment WHERE id={data['id']}")
         a = c.fetchone()
         text = "L'inventaire de l'aliment " + str(a[0]) + " à été fait"
-        notif(c, conn, 1, text, "/copeyito/stocks", 1)
+        notif(c, conn, 2, text, "/copeyito/stocks", 1)
         conn.commit()
         conn.close()
         return {"message": "Inventario realizado"}, 200

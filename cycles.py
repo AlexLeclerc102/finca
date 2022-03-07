@@ -535,10 +535,14 @@ class LotData(Resource):
         statistiques = c.fetchall()
         mort = 0
         cant = 0
+        if len(statistiques) > 0:
+            last_date = datetime.strptime(statistiques[0][1], '%Y-%m-%d')
         for i, s in enumerate(statistiques):
             stat = dict()
             stat["id"] = s[0]
             stat["fecha"] = changeDate(s[1])
+            if datetime.strptime(s[1], '%Y-%m-%d') > last_date:
+                last_date = datetime.strptime(s[1], '%Y-%m-%d')
             stat["typoestat"] = s[2]
             stat["cant/lb"] = round(s[3], 2)
             cant = s[3]
@@ -567,33 +571,59 @@ class LotData(Resource):
             croissance = sorted(c.fetchall(), key=lambda tup: tup[0])
             sem = findClosestNombreParLivre(
                 cant, croissance)
-            if sem < len(croissance):
-                total["alimentationstatpourc"] = croissance[sem][2]
-                if cant != 0 and total["totalActuel"][3] != 0:
-                    poids = (total["totalSemis"][1] -
+
+            nbr_semaines_croissance = datetime.now() - last_date
+            nbr_semaines_croissance = nbr_semaines_croissance.days // 7
+            sem_act = nbr_semaines_croissance + sem
+            poids_aliment = 0
+
+            c.execute(
+                f"SELECT taux_hebdomadaire FROM Mortalite WHERE espece_id = {espece[1]}")
+            temp = c.fetchone()
+            taux_hebdomaire = temp[0]
+
+            total_poisson = (total["totalSemis"][1] -
                              ((total["totalSemis"][1] -
                                total["totalPeches"][1] -
                                total["totalActuel"][0]) *
                               mort) /
                              total["totalActuel"][3] -
-                             total["totalPeches"][1]) / cant
-                    total["alimentationstat"] = croissance[sem][2] * poids
-                else:
-                    total["alimentationstat"] = 0
+                             total["totalPeches"][1])
+            if sem_act > len(croissance):
+                NbrLivre = croissance[-1][1]
             else:
-                total["alimentationstatpourc"] = croissance[-1][2]
-                if cant != 0:
-                    poids = (total["totalSemis"][1] -
-                             ((total["totalSemis"][1] -
-                               total["totalPeches"][1] -
-                               total["totalActuel"][0]) *
-                              mort) /
-                             100 /
-                             total["totalActuel"][3] -
-                             total["totalPeches"][1]) / cant
-                    total["alimentationstat"] = croissance[-1][2] * poids
+                NbrLivre = croissance[sem_act][1]
+
+            total_poisson = total_poisson * \
+                ((1-taux_hebdomaire)**nbr_semaines_croissance)
+            poids_total = total_poisson / NbrLivre
+
+            c.execute(f"SELECT termine FROM Lots WHERE id={lot_id}")
+            termine = c.fetchone()[0] == 1
+            pourcAli = 0
+            if not termine:
+                if sem_act >= len(croissance):
+                    pourcAli = croissance[-1][2]
+                    poids_aliment = croissance[-1][2] * poids_total
                 else:
-                    total["alimentationstat"] = 0
+                    pourcAli = croissance[sem_act][2]
+                    poids_aliment = croissance[sem_act][2] * poids_total
+
+            if poids_aliment < 0 or termine:
+                poids_aliment = 0
+            if total_poisson < 0:
+                total_poisson = 0
+            if poids_total < 0:
+                poids_total = 0
+            mortalite = mort + taux_hebdomaire * nbr_semaines_croissance
+
+            total['nbrLivre'] = NbrLivre
+            total['grUnidad'] = round(454 / NbrLivre, 2)
+            total['mortaliteStat'] = mortalite
+            total['poidsTotalStat'] = poids_total
+            total['totalPoissonStat'] = total_poisson
+            total["alimentationstatpourc"] = pourcAli
+            total["alimentationstat"] = poids_aliment
 
         total["alimentation"] = espece[2]
         conn.close()
