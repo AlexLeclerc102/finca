@@ -589,10 +589,14 @@ class LotData(Resource):
                               mort) /
                              total["totalActuel"][3] -
                              total["totalPeches"][1])
+
             if sem_act > len(croissance):
                 NbrLivre = croissance[-1][1]
             else:
-                NbrLivre = croissance[sem_act][1]
+                try:
+                    NbrLivre = croissance[sem_act][1]
+                except:
+                    NbrLivre = croissance[-1][1]
 
             total_poisson = total_poisson * \
                 ((1-taux_hebdomaire)**nbr_semaines_croissance)
