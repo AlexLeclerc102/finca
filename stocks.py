@@ -63,7 +63,10 @@ def changementStockInventaire(c, id_aliment, date, stock, commentaire=""):
             f"INSERT INTO Stock (type_aliment_id, date, stock, ajustement, commentaire, alimentation, vente, entre) VALUES ({id_aliment}, '{date}', {stock}, {ajustement}, '{commentaire}', 0, 0, 0)")
     elif last is not None:
         c.execute(
-            f"UPDATE Stock SET stock = {stock}, ajustement = {last[6] + ajustement}, commentaire = '{last[8]  + commentaire}' WHERE id={last[0]}")
+            f"SELECT stock FROM Stock WHERE type_aliment_id={id_aliment} AND date <'{date}' ORDER BY date DESC LIMIT 1")
+        true_last = c.fetchone()
+        c.execute(
+            f"UPDATE Stock SET stock = {stock}, ajustement = {stock - true_last[0] + last[4] + last[5] - last[7]}, commentaire = '{last[8]  + commentaire}' WHERE id={last[0]}")
     else:
         c.execute(
             f"INSERT INTO Stock (type_aliment_id, date, stock, ajustement, commentaire, alimentation, vente, entre) VALUES ({id_aliment}, '{date}', {stock}, {ajustement}, '{commentaire}', 0, 0, {ajustement})")
@@ -107,7 +110,6 @@ class Entre(Resource):
     @flask_praetorian.auth_required
     def post(self):
         data = request.json
-        print(data)
         date = changeDateBack(data['date'])
         conn = sqlite3.connect(dbPath)
         c = conn.cursor()
@@ -160,7 +162,6 @@ class Clients(Resource):
         data = request.json
         conn = sqlite3.connect(dbPath)
         c = conn.cursor()
-        print(data)
         if "id" in data.keys():
             if (data['cedula'] == "" or data['cedula'] == None) and data['adresse'] == "":
                 c.execute(
@@ -213,7 +214,6 @@ class Stocks(Resource):
             for j, name in enumerate(["id", "Date", "Stock", "Alimentation", "Entrée", "Ventes", "Ajustement",
                                       "Commentaire"]):
                 if name == "Date":
-                    print(b, traduction[name], changeDate(stocks[i][j]))
                     b[traduction[name]] = changeDate(stocks[i][j])
                 elif name in ["Stock", "Ajustement", "Alimentation", "Entrée", "Ventes"]:
                     b[traduction[name]] = round(stocks[i][j], 1)
@@ -251,7 +251,8 @@ class Stocks(Resource):
         conn.commit()
         c.execute(f"SELECT libelle FROM TypeAliment WHERE id={data['id']}")
         a = c.fetchone()
-        text = "L'inventaire de l'aliment " + str(a[0]) + " à été fait"
+        text = "L'inventaire de l'aliment " + \
+            str(a[0]).strip('"') + " à été fait"
         notif(c, conn, 2, text, "/copeyito/stocks", 1)
         conn.commit()
         conn.close()
