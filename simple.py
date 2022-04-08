@@ -50,11 +50,15 @@ class Aliment(Resource):
 
 class ChangementEau(Resource):
     @flask_praetorian.auth_required
-    def get(self):
+    def get(self, bassin=""):
         conn = sqlite3.connect(dbPath)
         c = conn.cursor()
-        c.execute(
-            f"SELECT ChangementEau.id, Bassins.libelle, Pompes.libelle, ChangementEau.date, ChangementEau.heures, ChangementEau.type_changement FROM ChangementEau, Bassins, Pompes WHERE Bassins.id=ChangementEau.bassin_id AND ChangementEau.pompe_id=Pompes.id ORDER BY ChangementEau.date DESC")
+        if bassin != "":
+            c.execute(
+                f"SELECT ChangementEau.id, Bassins.libelle, Pompes.libelle, ChangementEau.date, ChangementEau.heures, ChangementEau.type_changement FROM ChangementEau, Bassins, Pompes WHERE Bassins.id=ChangementEau.bassin_id AND ChangementEau.pompe_id=Pompes.id AND Bassins.libelle='{bassin}' ORDER BY ChangementEau.date DESC")
+        else:
+            c.execute(
+                f"SELECT ChangementEau.id, Bassins.libelle, Pompes.libelle, ChangementEau.date, ChangementEau.heures, ChangementEau.type_changement FROM ChangementEau, Bassins, Pompes WHERE Bassins.id=ChangementEau.bassin_id AND ChangementEau.pompe_id=Pompes.id ORDER BY ChangementEau.date DESC")
         chg = c.fetchmany(50)
         for i, item in enumerate(chg):
             d = dict()
