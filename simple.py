@@ -55,7 +55,14 @@ class ChangementEau(Resource):
         c = conn.cursor()
         if bassin != "":
             c.execute(
-                f"SELECT ChangementEau.id, Bassins.libelle, Pompes.libelle, ChangementEau.date, ChangementEau.heures, ChangementEau.type_changement FROM ChangementEau, Bassins, Pompes WHERE Bassins.id=ChangementEau.bassin_id AND ChangementEau.pompe_id=Pompes.id AND Bassins.libelle='{bassin}' ORDER BY ChangementEau.date DESC")
+                f"SELECT Cycles.date_rempli, Cycles.date_vide FROM Cycles, Bassins WHERE Bassins.id = Cycles.bassin_id AND Bassins.libelle='{bassin}' ORDER BY date_rempli DESC")
+            dates = c.fetchone()
+            if dates[1] == '':
+                c.execute(
+                    f"SELECT ChangementEau.id, Bassins.libelle, Pompes.libelle, ChangementEau.date, ChangementEau.heures, ChangementEau.type_changement FROM ChangementEau, Bassins, Pompes WHERE Bassins.id=ChangementEau.bassin_id AND ChangementEau.pompe_id=Pompes.id AND Bassins.libelle='{bassin}' AND date >= '{dates[0]}' ORDER BY ChangementEau.date DESC")
+            else:
+                c.execute(
+                    f"SELECT ChangementEau.id, Bassins.libelle, Pompes.libelle, ChangementEau.date, ChangementEau.heures, ChangementEau.type_changement FROM ChangementEau, Bassins, Pompes WHERE Bassins.id=ChangementEau.bassin_id AND ChangementEau.pompe_id=Pompes.id AND Bassins.libelle='{bassin}' AND date >= '{dates[0]}' AND date < '{dates[1]}' ORDER BY ChangementEau.date DESC")
         else:
             c.execute(
                 f"SELECT ChangementEau.id, Bassins.libelle, Pompes.libelle, ChangementEau.date, ChangementEau.heures, ChangementEau.type_changement FROM ChangementEau, Bassins, Pompes WHERE Bassins.id=ChangementEau.bassin_id AND ChangementEau.pompe_id=Pompes.id ORDER BY ChangementEau.date DESC")
