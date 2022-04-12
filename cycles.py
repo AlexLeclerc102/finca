@@ -685,19 +685,36 @@ class Semis(Resource):
 
 class Stats(Resource):
     @ flask_praetorian.auth_required
-    def post(self):
+    def post(self, lot_id=""):
         data = request.json
         conn = sqlite3.connect(dbPath)
         c = conn.cursor()
-        if "commentaire" in data:
-            c.execute(
-                f"INSERT INTO Statistiques (lot_id, date, quantitelb, mortalite, typestat, commentaire) VALUES ({data['lot']}, '{data['date']}', {round(float(data['quantitelb']),6)}, {data['mortalite']}, '{data['typeStat']}', '{data['commentaire']}')")
+        if lot_id == "":
+            if "commentaire" in data:
+                c.execute(
+                    f"INSERT INTO Statistiques (lot_id, date, quantitelb, mortalite, typestat, commentaire) VALUES ({data['lot']}, '{data['date']}', {round(float(data['quantitelb']),6)}, {data['mortalite']}, '{data['typeStat']}', '{data['commentaire']}')")
+            else:
+                c.execute(
+                    f"INSERT INTO Statistiques (lot_id, date, quantitelb, mortalite, typestat) VALUES ({data['lot']}, '{data['date']}', {round(float(data['quantitelb']),6)}, {data['mortalite']}, '{data['typeStat']}')")
+            conn.commit()
+            conn.close()
+            return {"message": "Statistique bien ajouté"}, 200
         else:
+            id = data['id']
             c.execute(
-                f"INSERT INTO Statistiques (lot_id, date, quantitelb, mortalite, typestat) VALUES ({data['lot']}, '{data['date']}', {round(float(data['quantitelb']),6)}, {data['mortalite']}, '{data['typeStat']}')")
-        conn.commit()
-        conn.close()
-        return {"message": "Statistique bien ajouté"}, 200
+                f"SELECT Especes.type FROM Lots, Statistiques, Especes WHERE Lots.id = Statistiques.lot_id AND Especes.id=Lots.espece_id AND Statistiques.id = {id}")
+            typ = c.fetchone()[0]
+            changes = ''
+            changes += f"date = '{changeDateBack(data['fecha'])}',"
+            changes += f"commentaire = '{data['comentario']}',"
+            changes += f"mortalite = {float(data['mortalidad'].strip('%'))/100},"
+            changes += f"typestat = '{data['typoestat']}',"
+            changes = changes.strip(',')
+            command = f"UPDATE Statistiques SET {changes} WHERE id = {id}"
+            c.execute(command)
+            conn.commit()
+            conn.close()
+            return {"message": "Statistiques bien modifié"}, 200
 
 
 class Peches(Resource):
