@@ -120,6 +120,19 @@ class Entre(Resource):
         return {"message": "Compra añanida"}, 200
 
 
+class DeleteClients(Resource):
+    @flask_praetorian.auth_required
+    def post(self):
+        data = request.json
+        conn = sqlite3.connect(dbPath)
+        c = conn.cursor()
+        print(data['id'])
+        c.execute(f"DELETE FROM Clients WHERE id={data['id']}")
+        conn.commit()
+        conn.close()
+        return {"message": "Deleted"}, 200
+
+
 class Clients(Resource):
     @flask_praetorian.auth_required
     def get(self, client):
