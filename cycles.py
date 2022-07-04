@@ -484,6 +484,8 @@ class Lots(Resource):
         data = request.json
         c.execute(f"UPDATE Lots SET termine=1 WHERE id={data['id']}")
         date = changeDateBack(data['date'])
+        if data['mortalite'] == None:
+            data['mortalite'] = 0
         c.execute(
             f"INSERT INTO Statistiques (lot_id, date, quantitelb, mortalite, commentaire, typestat) VALUES ({data['id']}, '{date}', {data['quantitelb']}, {data['mortalite']},'Lote terminado', 'F')")
         conn.commit()
