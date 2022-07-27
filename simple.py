@@ -35,6 +35,22 @@ class Pompes(Resource):
         return {"message": "Changement d'eau crée"}, 200
 
 
+class TotalPompes(Resource):
+    @flask_praetorian.auth_required
+    def get(self, dateDebut, dateFin):
+        conn = sqlite3.connect(dbPath)
+        c = conn.cursor()
+        c.execute(
+            f"SELECT Pompes.libelle, sum(ChangementEau.heures) FROM ChangementEau, Pompes WHERE Pompes.id=ChangementEau.pompe_id AND ChangementEau.date>='{dateDebut}' AND ChangementEau.date<'{dateFin}' GROUP BY ChangementEau.pompe_id")
+        total = c.fetchall()
+        for i, item in enumerate(total):
+            d = dict()
+            for j, name in enumerate(["Pompe", "Heures"]):
+                d[name] = total[i][j]
+            total[i] = d
+        return {"total": total}, 200
+
+
 class Aliment(Resource):
     @flask_praetorian.auth_required
     def post(self):

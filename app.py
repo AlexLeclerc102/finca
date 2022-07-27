@@ -12,7 +12,7 @@ from cycles import AncienLots, Cycles, LotData, Peches, Semis, Stats, Lots, Anci
 from stocks import DeleteClients, Stocks, VenteAliments, Clients, Entre
 from user import UserList
 from utils import changeDate, changeDateBack
-from simple import Aliment, AlimentationTotal, Pompes, Bassins, ShowTable, AddInTable, Alimentation, EspecesRes, ChangementEau, Notifications, ResetStockAlimentation
+from simple import Aliment, AlimentationTotal, Pompes, Bassins, ShowTable, AddInTable, Alimentation, EspecesRes, ChangementEau, Notifications, ResetStockAlimentation, TotalPompes
 from ventes import EspecesVente, VenteCrevette, VentePoissons, VentePoissonsJour, VentesParJour
 from analyseEau import AnalyseEau, AnalyseEauGraph, AnalyseOx
 from emailUser import sendErrorMail
@@ -53,7 +53,6 @@ def log_exception(sender, exception, **extra):
 
 got_request_exception.connect(log_exception, app)
 
-# Add users for the example
 with app.app_context():
     db.create_all()
     if db.session.query(User).filter_by(username='legacy').count() < 1:
@@ -229,6 +228,7 @@ api.add_resource(Stocks, '/api/stocks/<filtre>/<dateDebut>', '/api/stocks')
 api.add_resource(ChangementEau, '/api/changementEau',
                  '/api/changementEau/<bassin>')
 api.add_resource(Entre, '/api/entre')
+api.add_resource(TotalPompes, '/api/totalPompes/<dateDebut>/<dateFin>')
 api.add_resource(Notifications, '/api/notifications')
 api.add_resource(Aliment, '/api/aliments')
 api.add_resource(ResetStockAlimentation, '/api/resetStockAlimentation/<date>')
